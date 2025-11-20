@@ -4,7 +4,7 @@
 
 ## 目录结构
 
-```text
+```
 frontend/   # Vue 3 + Vite + pnpm (Tailwind + daisyUI)
 backend/    # FastAPI 服务及 MCP 服务器脚本
 .env        # 远程 MySQL 占位配置（请立即替换）
@@ -18,6 +18,10 @@ pnpm install            # 已初始化，可按需重新安装
 pnpm start              # 启动开发服务器 (Vite --host 0.0.0.0 --port 5173)
 pnpm build              # 生产构建
 ```
+
+### 一键启动所有服务
+
+在根目录运行 `./start.sh` 可同时启动前端、后端 API 和 MCP 服务器（支持热重载）。
 
 ### Tailwind & daisyUI
 
@@ -40,7 +44,7 @@ uvicorn mcp_server:app --reload --port 9000  # 独立 MCP 服务器
 
 `.env` 已包含远端 MySQL 的占位键值：
 
-```env
+```
 MYSQL_HOST=your.mysql.host
 MYSQL_PORT=3306
 MYSQL_USER=mun_user
