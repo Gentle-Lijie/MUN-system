@@ -7,10 +7,29 @@ yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
 
-node_modules
-dist
-dist-ssr
+node_modules/
+dist/
+dist-ssr/
 *.local
+coverage/
+.nyc_output/
+*.tsbuildinfo
+
+# Python caches & artifacts
+__pycache__/
+*.py[cod]
+*.so
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.ropeproject/
+
+# Virtual environments
+.venv/
+venv/
+env/
+.python-version
 
 # Editor directories and files
 .vscode/*
@@ -25,5 +44,7 @@ dist-ssr
 
 # Env files
 .env
-.venv
+.env.*
 .env.local
+.env.production
+.env.development

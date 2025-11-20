@@ -1,12 +1,12 @@
 # MUN System Monorepo
 
-该仓库包含一个使用 **Vue 3 + Vite + TailwindCSS + daisyUI** 打造的前端与一个基于 **FastAPI + MySQL** 的后端，同时提供独立的 daisyUI MCP 服务器入口。
+该仓库包含一个使用 **Vue 3 + Vite + TailwindCSS + daisyUI** 打造的前端与一个基于 **FastAPI + MySQL** 的后端。
 
 ## 目录结构
 
 ```
 frontend/   # Vue 3 + Vite + pnpm (Tailwind + daisyUI)
-backend/    # FastAPI 服务及 MCP 服务器脚本
+backend/    # FastAPI 服务
 .env        # 远程 MySQL 占位配置（请立即替换）
 ```
 
@@ -21,14 +21,14 @@ pnpm build              # 生产构建
 
 ### 一键启动所有服务
 
-在根目录运行 `./start.sh` 可同时启动前端、后端 API 和 MCP 服务器（支持热重载）。
+在根目录运行 `./start.sh` 可同时启动前端、后端 API（支持热重载）。
 
 ### Tailwind & daisyUI
 
 - `tailwind.config.js` 已启用 daisyUI，并新增 `munlight` 主题。
 - `src/App.vue` 演示了 hero、card、timeline 等 daisyUI 组件，可直接扩展。
 
-## 后端（FastAPI + MCP Server）
+## 后端（FastAPI）
 
 详见 `backend/README.md`，核心命令：
 
@@ -37,7 +37,6 @@ cd backend
 python -m venv .venv && source .venv/bin/activate
 pip install -r requirements.txt
 uvicorn app.main:app --reload --port 8000    # 主 API
-uvicorn mcp_server:app --reload --port 9000  # 独立 MCP 服务器
 ```
 
 ## 环境变量
@@ -57,5 +56,4 @@ MYSQL_DATABASE=mun_system
 ## 下一步建议
 
 1. 将 FastAPI 与真实远程 MySQL 串联，并编写 Alembic 迁移。
-2. 通过 MCP 路由与前端交互，实现实时组件/主题同步。
-3. 配置 CI（例如 GitHub Actions）自动运行 `pnpm build` 与 `pytest`/`uvicorn` 启动检查。
+2. 配置 CI（例如 GitHub Actions）自动运行 `pnpm build` 与 `pytest`/`uvicorn` 启动检查。

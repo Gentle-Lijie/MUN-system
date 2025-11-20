@@ -1,3 +1,3 @@
-from . import health, mcp_daisyui
+from . import health
 
-__all__ = ['health', 'mcp_daisyui']
+__all__ = ['health']

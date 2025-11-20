@@ -2,7 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from .config import settings
-from .routers import health, mcp_daisyui
+from .routers import health
 
 app = FastAPI(title=settings.app_name)
 
@@ -15,7 +15,6 @@ app.add_middleware(
 )
 
 app.include_router(health.router)
-app.include_router(mcp_daisyui.router)
 
 
 @app.get('/')
