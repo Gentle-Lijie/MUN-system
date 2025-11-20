@@ -13,6 +13,8 @@ export default {
   },
   daisyui: {
     themes: [
+      'light',
+      'dark',
       {
         munlight: {
           primary: '#2563eb',
