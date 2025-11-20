@@ -1,6 +1,6 @@
 # Python Backend (FastAPI + MySQL)
 
-This service exposes REST endpoints for the MUN 控制系统, including the daisyUI-focused MCP server.
+This service exposes REST endpoints for the MUN 控制系统.
 
 ## 环境准备
 
@@ -14,21 +14,18 @@ This service exposes REST endpoints for the MUN 控制系统, including the dais
    ```
 
 3. 配置根目录下的 `.env`（示例已经创建，替换其中的 MySQL 信息）。
+4. 创建数据库：在 MySQL 中创建数据库，然后运行 `create_db.sql` 创建表结构。
+
+   ```bash
+   mysql -u root -p -e "CREATE DATABASE IF NOT EXISTS mun_system CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;"
+   mysql -u root -p mun_system < create_db.sql
+   ```
 
 ## 启动 API
 
 ```bash
 cd backend
 uvicorn app.main:app --reload --port 8000
-```
-
-## 启动 daisyUI MCP Server
-
-专用 MCP 服务器只会暴露 `/mcp/...` 路由，方便与其它系统集成。
-
-```bash
-cd backend
-uvicorn mcp_server:app --reload --port 9000
 ```
 
 ## 远程 MySQL
@@ -40,9 +37,3 @@ uvicorn mcp_server:app --reload --port 9000
 
 - `GET /health/ping`
 - `GET /` 根路由会返回当前服务状态。
-
-## MCP 路由示例
-
-- `GET /mcp/components`：列出 daisyUI 组件词典。
-- `POST /mcp/theme/preview`：预览主题（`munlight/business`）。
-- `POST /mcp/components/action`：向后端广播生成/同步指令。
