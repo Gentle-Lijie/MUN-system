@@ -10,11 +10,12 @@ from werkzeug.security import check_password_hash, generate_password_hash
 
 from ..extensions import db
 
-ROLE_CHOICES = ('admin', 'dais', 'delegate')
+ROLE_CHOICES = ('admin', 'dais', 'delegate', 'observer')
 
 
 class User(db.Model):
     __tablename__ = 'users'
+    DEFAULT_PASSWORD = '123456'
 
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(255), nullable=False)
@@ -33,6 +34,7 @@ class User(db.Model):
         onupdate=datetime.utcnow,
     )
     session_token = db.Column(db.String(255), unique=True)
+    permissions_json = db.Column(db.Text, default='[]')
 
     ROLE_PERMISSIONS: dict[str, list[str]] = {
         'admin': [
@@ -51,6 +53,10 @@ class User(db.Model):
             'delegate:self',
             'documents:submit',
             'messages:send',
+        ],
+        'observer': [
+            'observer:read',
+            'reports:view',
         ],
     }
 
@@ -74,6 +80,7 @@ class User(db.Model):
             'email': self.email,
             'role': self.role,
             'organization': self.organization,
+            'committee': self.organization,
             'phone': self.phone,
             'lastLogin': self.last_login.isoformat() if self.last_login else None,
             'createdAt': self.created_at.isoformat() if self.created_at else None,
@@ -83,4 +90,19 @@ class User(db.Model):
 
     @property
     def permissions(self) -> list[str]:
+        import json
+        custom_perms = self.permissions_json
+        if custom_perms:
+            try:
+                return json.loads(custom_perms)
+            except json.JSONDecodeError:
+                return []
         return self.ROLE_PERMISSIONS.get(self.role, [])
+
+    @permissions.setter
+    def permissions(self, value: list[str] | str) -> None:
+        import json
+        if isinstance(value, list):
+            self.permissions_json = json.dumps(value)
+        else:
+            self.permissions_json = value

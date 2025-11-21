@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { RouterLink, RouterView, useRoute } from 'vue-router'
 
 type FeatureItem = {
@@ -55,7 +55,74 @@ const featureGroups: FeatureGroup[] = [
 
 const route = useRoute()
 const activePath = computed(() => route.path)
-const totalFeatures = featureGroups.reduce((sum, group) => sum + group.items.length, 0)
+const routePermissionMap: Record<string, string | string[]> = {
+    '/backend/management/users': 'users:manage',
+    '/backend/management/venues': ['users:manage', 'presidium:manage'],
+    '/backend/management/delegates': 'delegates:manage',
+    '/backend/management/logs': 'logs:read',
+    '/backend/presidium/file-approval': 'presidium:manage',
+    '/backend/presidium/file-management': 'presidium:manage',
+    '/backend/presidium/crisis': 'crisis:dispatch',
+    '/backend/presidium/timeline': 'timeline:update',
+    '/backend/presidium/messages': 'messages:broadcast',
+    '/backend/delegate/profile': 'delegate:self',
+    '/backend/delegate/documents': 'documents:submit',
+    '/backend/delegate/messages': 'messages:send',
+    '/backend/delegate/crisis-response': 'delegate:self',
+}
+
+const userPermissions = ref<string[]>([])
+const loadingPermissions = ref(false)
+const permissionError = ref('')
+
+const hasPermission = (route: string): boolean => {
+    const requirement = routePermissionMap[route]
+    if (!requirement) {
+        return false
+    }
+    if (!userPermissions.value.length) {
+        return false
+    }
+    if (Array.isArray(requirement)) {
+        return requirement.some((perm) => userPermissions.value.includes(perm))
+    }
+    return userPermissions.value.includes(requirement)
+}
+
+const filteredFeatureGroups = computed(() =>
+    featureGroups
+        .map((group) => ({
+            ...group,
+            items: group.items.filter((item) => hasPermission(item.to)),
+        }))
+        .filter((group) => group.items.length > 0),
+)
+
+const totalFeatures = computed(() =>
+    filteredFeatureGroups.value.reduce((sum, group) => sum + group.items.length, 0),
+)
+
+const fetchPermissions = async () => {
+    loadingPermissions.value = true
+    permissionError.value = ''
+    try {
+        const response = await fetch('/api/auth/profile', { credentials: 'include' })
+        if (!response.ok) {
+            throw new Error('无法获取权限信息，请重新登录')
+        }
+        const data = await response.json()
+        userPermissions.value = Array.isArray(data?.permissions) ? data.permissions : []
+    } catch (error) {
+        console.error(error)
+        permissionError.value = error instanceof Error ? error.message : '加载权限失败'
+    } finally {
+        loadingPermissions.value = false
+    }
+}
+
+onMounted(() => {
+    fetchPermissions()
+})
 </script>
 
 <template>
@@ -71,7 +138,16 @@ const totalFeatures = featureGroups.reduce((sum, group) => sum + group.items.len
                     <span class="badge badge-outline">{{ totalFeatures }}</span>
                 </div>
                 <div class="space-y-6 overflow-y-auto pr-2 flex-1">
-                    <div v-for="group in featureGroups" :key="group.key"
+                    <div v-if="loadingPermissions" class="flex justify-center py-6">
+                        <span class="loading loading-spinner loading-md"></span>
+                    </div>
+                    <div v-else-if="permissionError" class="alert alert-error alert-soft text-sm">
+                        <span>{{ permissionError }}</span>
+                    </div>
+                    <div v-else-if="filteredFeatureGroups.length === 0" class="text-center text-sm text-base-content/60">
+                        暂无可访问的后台功能，请联系管理员分配权限。
+                    </div>
+                    <div v-else v-for="group in filteredFeatureGroups" :key="group.key"
                         class="border border-base-300 rounded-xl p-4 bg-base-200/60">
                         <p class="text-sm font-semibold text-base-content/70">{{ group.title }}</p>
                         <p class="text-xs text-base-content/50 mb-3">{{ group.subtitle }}</p>

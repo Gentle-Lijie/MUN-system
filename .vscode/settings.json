@@ -5,6 +5,12 @@
     },
     {
       "file": "./.vscode/auth-overview.md"
+    },
+    {
+      "file": "./.vscode/users-overview.md"
+    },
+    {
+      "file": "./.vscode/permissions-overview.md"
     }
   ]
 }

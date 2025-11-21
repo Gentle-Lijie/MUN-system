@@ -29,7 +29,7 @@ CREATE TABLE Users (
     name VARCHAR(255) NOT NULL,
     email VARCHAR(255) UNIQUE NOT NULL,
     password_hash VARCHAR(255) NOT NULL,
-    role ENUM('admin', 'dais', 'delegate') NOT NULL,
+    role ENUM('admin', 'dais', 'delegate', 'observer') NOT NULL,
     organization VARCHAR(255),
     phone VARCHAR(20),
     last_login TIMESTAMP NULL,

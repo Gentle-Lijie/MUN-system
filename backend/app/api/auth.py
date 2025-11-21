@@ -10,36 +10,7 @@ from flask_restful import Resource, abort
 
 from ..extensions import db
 from ..models.user import User
-
-SESSION_COOKIE_NAME = 'mun_session'
-
-
-def _extract_token() -> str | None:
-    auth_header = request.headers.get('Authorization', '').strip()
-    if auth_header.startswith('Bearer '):
-        return auth_header.split(' ', 1)[1].strip() or None
-    cookie_token = request.cookies.get(SESSION_COOKIE_NAME)
-    if cookie_token:
-        return cookie_token.strip()
-    if request.is_json:
-        body = request.get_json(silent=True) or {}
-        fallback = body.get('token')
-        if isinstance(fallback, str):
-            fallback = fallback.strip()
-        return fallback or None
-    return None
-
-
-def _get_user_from_request(require: bool = True) -> User | None:
-    token = _extract_token()
-    if not token:
-        if require:
-            abort(401, message='Authentication token is required')
-        return None
-    user = User.query.filter_by(session_token=token).first()
-    if user is None and require:
-        abort(401, message='Invalid or expired session token')
-    return user
+from .utils import SESSION_COOKIE_NAME, get_user_from_request
 
 
 class AuthLoginResource(Resource):
@@ -80,7 +51,7 @@ class AuthLogoutResource(Resource):
     """Terminate current session."""
 
     def post(self) -> tuple[Any, int]:
-        user = _get_user_from_request(require=False)
+        user = get_user_from_request(require=False)
         if user:
             user.clear_session_token()
             db.session.commit()
@@ -99,7 +70,7 @@ class AuthProfileResource(Resource):
     """Return current authenticated user profile."""
 
     def get(self) -> tuple[dict[str, Any], int]:
-        user = _get_user_from_request(require=True)
+        user = get_user_from_request(require=True)
         return user.to_dict(), 200
 
 
@@ -107,7 +78,7 @@ class AuthPasswordResource(Resource):
     """Allow authenticated users to change their password."""
 
     def patch(self) -> tuple[dict[str, str], int]:
-        user = _get_user_from_request(require=True)
+        user = get_user_from_request(require=True)
         payload = request.get_json(silent=True) or {}
         current_password = payload.get('currentPassword')
         new_password = payload.get('newPassword')

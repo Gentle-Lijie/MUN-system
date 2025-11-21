@@ -199,7 +199,8 @@
                         "enum": [
                             "admin",
                             "dais",
-                            "delegate"
+                            "delegate",
+                            "observer"
                         ]
                     },
                     "organization": {
