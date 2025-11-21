@@ -1,8 +1,10 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import PopupDelegate from '@/components/PopupDelegate.vue'
+import PopupMotion from '@/components/PopupMotion.vue'
 
 const showPopupDelegate = ref(false)
+const showPopupMotion = ref(false)
 
 const speakerQueue = [
     { country: 'France', delegate: 'Alice Martin', status: 'speaking', timeLeft: '01:30' },
@@ -12,12 +14,76 @@ const speakerQueue = [
     { country: 'Egypt', delegate: 'Omar Hassan', status: 'waiting', timeLeft: '02:00' },
 ]
 
-const historyEvents = [
+const historyEvents = ref([
     { title: '开启主发言名单', description: '主持人宣布正式议程开始。' },
     { title: '动议：主持核心磋商', description: '通过 20 分钟主持核心磋商。' },
     { title: '提交工作文件', description: 'GA1/2025/WP.3 已提交。' },
     { title: '休会', description: '午餐休息 30 分钟。' },
-]
+])
+
+type MotionSubmission = {
+    motion: {
+        id: string
+        title: string
+        requires: Record<'country' | 'unitTime' | 'totalTime', boolean>
+    }
+    form: {
+        country: string
+        unitTime: number
+        totalTime: number
+        notes: string
+    }
+}
+
+const onDelegateConfirm = (country?: string) => {
+    if (!country) return
+    historyEvents.value.unshift({
+        title: `添加发言者：${country}`,
+        description: `${country} 已加入主发言名单。`,
+    })
+}
+
+const handleMotionPass = ({ motion, form }: MotionSubmission) => {
+    const summary: string[] = ['获得通过']
+    if (motion.requires.country && form.country) {
+        summary.push(`由 ${form.country} 发起`)
+    }
+    if (motion.requires.unitTime && form.unitTime) {
+        summary.push(`单次 ${form.unitTime} 分钟`)
+    }
+    if (motion.requires.totalTime && form.totalTime) {
+        summary.push(`总时长 ${form.totalTime} 分钟`)
+    }
+    if (form.notes) {
+        summary.push(form.notes)
+    }
+
+    historyEvents.value.unshift({
+        title: `动议通过：${motion.title}`,
+        description: summary.join(' · ') || '请查看主持人备注。',
+    })
+}
+
+const handleMotionFail = ({ motion, form }: MotionSubmission) => {
+    const summary: string[] = ['未获通过']
+    if (motion.requires.country && form.country) {
+        summary.push(`由 ${form.country} 发起`)
+    }
+    if (motion.requires.unitTime && form.unitTime) {
+        summary.push(`单次 ${form.unitTime} 分钟`)
+    }
+    if (motion.requires.totalTime && form.totalTime) {
+        summary.push(`总时长 ${form.totalTime} 分钟`)
+    }
+    if (form.notes) {
+        summary.push(form.notes)
+    }
+
+    historyEvents.value.unshift({
+        title: `动议未通过：${motion.title}`,
+        description: summary.join(' · ') || '请查看主持人备注。',
+    })
+}
 
 const currentTime = computed(() => {
     const now = new Date()
@@ -107,7 +173,8 @@ const currentTime = computed(() => {
                         </div>
                     </div>
                     <div class="px-8 pb-8">
-                        <button class="btn btn-accent w-full text-1.5xl">发起动议</button>
+                        <button class="btn btn-accent w-full text-1.5xl" @click="showPopupMotion = true">发起动议</button>
+                        <PopupMotion v-model="showPopupMotion" @pass="handleMotionPass" @fail="handleMotionFail" />
                     </div>
                 </div>
             </div>

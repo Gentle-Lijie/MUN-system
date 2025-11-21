@@ -3,6 +3,8 @@ import { createRouter, createWebHistory } from 'vue-router'
 const DisplayBoard = () => import('@/views/DisplayBoard.vue')
 const ManagementConsole = () => import('@/views/ManagementConsole.vue')
 const MiniWindow = () => import('@/views/MiniWindow.vue')
+const MotionLauncher = () => import('@/views/MotionLauncher.vue')
+const FileSelect = () => import('@/views/FileSelect.vue')
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -28,6 +30,18 @@ const router = createRouter({
       name: 'mini-window',
       component: MiniWindow,
       meta: { title: '会场小窗口' },
+    },
+    {
+      path: '/motion-launcher',
+      name: 'motion-launcher',
+      component: MotionLauncher,
+      meta: { title: '动议弹窗演示' },
+    },
+    {
+      path: '/file-select',
+      name: 'file-select',
+      component: FileSelect,
+      meta: { title: '文件选择' },
     },
     {
       path: '/popup_delegate',
