@@ -10,6 +10,7 @@ type UserProfile = {
 const navItems = [
   { label: '显示大屏', to: '/display' },
   { label: '会议管理', to: '/management' },
+  { label: '后台功能', to: '/backend' },
   { label: '会场小窗口', to: '/mini-window' },
 ]
 

@@ -5,6 +5,20 @@ const ManagementConsole = () => import('@/views/ManagementConsole.vue')
 const MiniWindow = () => import('@/views/MiniWindow.vue')
 const MotionLauncher = () => import('@/views/MotionLauncher.vue')
 const FileSelect = () => import('@/views/FileSelect.vue')
+const BackendWorkspace = () => import('@/views/backend/BackendWorkspace.vue')
+const UserManagementView = () => import('@/views/backend/UserManagementView.vue')
+const VenueManagementView = () => import('@/views/backend/VenueManagementView.vue')
+const DelegateManagementView = () => import('@/views/backend/DelegateManagementView.vue')
+const LogManagementView = () => import('@/views/backend/LogManagementView.vue')
+const FileApprovalView = () => import('@/views/backend/FileApprovalView.vue')
+const FileManagementView = () => import('@/views/backend/FileManagementView.vue')
+const CrisisManagementView = () => import('@/views/backend/CrisisManagementView.vue')
+const TimelineManagementView = () => import('@/views/backend/TimelineManagementView.vue')
+const MessageManagementView = () => import('@/views/backend/MessageManagementView.vue')
+const DelegateProfileView = () => import('@/views/backend/DelegateProfileView.vue')
+const DelegateDocumentsView = () => import('@/views/backend/DelegateDocumentsView.vue')
+const DelegateMessagesView = () => import('@/views/backend/DelegateMessagesView.vue')
+const DelegateCrisisResponseView = () => import('@/views/backend/DelegateCrisisResponseView.vue')
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -48,6 +62,95 @@ const router = createRouter({
       name: 'popup_delegate',
       component: () => import('@/views/popup_delegate.vue'),
       meta: { title: '选择发言者国家' },
+    },
+    {
+      path: '/backend',
+      component: BackendWorkspace,
+      children: [
+        {
+          path: '',
+          redirect: '/backend/management/users',
+        },
+        {
+          path: 'management/users',
+          name: 'backend-management-users',
+          component: UserManagementView,
+          meta: { title: '用户管理' },
+        },
+        {
+          path: 'management/venues',
+          name: 'backend-management-venues',
+          component: VenueManagementView,
+          meta: { title: '会场管理' },
+        },
+        {
+          path: 'management/delegates',
+          name: 'backend-management-delegates',
+          component: DelegateManagementView,
+          meta: { title: '代表管理' },
+        },
+        {
+          path: 'management/logs',
+          name: 'backend-management-logs',
+          component: LogManagementView,
+          meta: { title: '日志管理' },
+        },
+        {
+          path: 'presidium/file-approval',
+          name: 'backend-presidium-file-approval',
+          component: FileApprovalView,
+          meta: { title: '文件审批' },
+        },
+        {
+          path: 'presidium/file-management',
+          name: 'backend-presidium-file-management',
+          component: FileManagementView,
+          meta: { title: '文件管理' },
+        },
+        {
+          path: 'presidium/crisis',
+          name: 'backend-presidium-crisis',
+          component: CrisisManagementView,
+          meta: { title: '危机管理' },
+        },
+        {
+          path: 'presidium/timeline',
+          name: 'backend-presidium-timeline',
+          component: TimelineManagementView,
+          meta: { title: '时间轴管理' },
+        },
+        {
+          path: 'presidium/messages',
+          name: 'backend-presidium-messages',
+          component: MessageManagementView,
+          meta: { title: '消息管理' },
+        },
+        {
+          path: 'delegate/profile',
+          name: 'backend-delegate-profile',
+          component: DelegateProfileView,
+          meta: { title: '个人面板' },
+        },
+        {
+          path: 'delegate/documents',
+          name: 'backend-delegate-documents',
+          component: DelegateDocumentsView,
+          meta: { title: '文件中心' },
+        },
+        {
+          path: 'delegate/messages',
+          name: 'backend-delegate-messages',
+          component: DelegateMessagesView,
+          meta: { title: '消息中心' },
+        },
+        {
+          path: 'delegate/crisis-response',
+          name: 'backend-delegate-crisis-response',
+          component: DelegateCrisisResponseView,
+          meta: { title: '危机响应' },
+        },
+      ],
+      meta: { title: '后台功能矩阵' },
     },
   ],
   scrollBehavior() {
