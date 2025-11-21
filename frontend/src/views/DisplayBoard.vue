@@ -1,5 +1,8 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
+import PopupDelegate from '@/components/PopupDelegate.vue'
+
+const showPopupDelegate = ref(false)
 
 const speakerQueue = [
     { country: 'France', delegate: 'Alice Martin', status: 'speaking', timeLeft: '01:30' },
@@ -84,7 +87,9 @@ const currentTime = computed(() => {
                         </div>
                     </div>
                     <div class="px-8 pb-8">
-                        <button class="btn btn-primary w-full text-1.5xl">添加发言者</button>
+                        <button class="btn btn-primary w-full text-1.5xl"
+                            @click="showPopupDelegate = true">添加发言者</button>
+                        <PopupDelegate v-model="showPopupDelegate" @confirm="onDelegateConfirm" />
                     </div>
                 </div>
 

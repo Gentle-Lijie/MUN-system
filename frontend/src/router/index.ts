@@ -29,6 +29,12 @@ const router = createRouter({
       component: MiniWindow,
       meta: { title: '会场小窗口' },
     },
+    {
+      path: '/popup_delegate',
+      name: 'popup_delegate',
+      component: () => import('@/views/popup_delegate.vue'),
+      meta: { title: '选择发言者国家' },
+    },
   ],
   scrollBehavior() {
     return { top: 0 }
