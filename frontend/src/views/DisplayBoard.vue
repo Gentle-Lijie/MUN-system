@@ -98,9 +98,9 @@ const currentTime = computed(() => {
 </script>
 
 <template>
-    <section class="h-screen overflow-hidden bg-base-200 p-2">
-        <div class="flex h-full min-h-0 flex-col gap-4">
-            <header class="flex items-center justify-between rounded-3xl bg-base-100 px-8 py-3 shadow-xl">
+    <section class="h-screen overflow-hidden bg-base-200 p-8">
+        <div class="flex h-full min-h-0 flex-col gap-4 w-full">
+            <header class="flex items-center justify-between rounded-3xl bg-base-100 px-8 py-3 shadow-xl w-full">
                 <h1 class="text-4xl font-bold">当前会场：GA1 - 核裁军</h1>
                 <div class="text-center text-3xl font-semibold">{{ currentTime }}</div>
                 <div class="stats stats-horizontal gap-2 text-right">
@@ -123,7 +123,7 @@ const currentTime = computed(() => {
                 </div>
             </header>
 
-            <div class="grid flex-1 min-h-0 gap-4 lg:grid-cols-[35%_65%]">
+            <div class="grid flex-1 min-h-0 lg:grid-cols-[34.5%_64.5%] w-full box-border" style="gap:1%">
                 <div class="flex h-full min-h-0 flex-col rounded-3xl bg-base-100 shadow-xl">
                     <div class="px-8 py-6 text-center text-6xl font-bold">00:00</div>
                     <div class="px-8 pb-6">

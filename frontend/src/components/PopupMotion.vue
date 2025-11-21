@@ -1,19 +1,20 @@
 <template>
     <dialog v-if="modelValue" class="modal" open>
-        <div class="modal-box w-11/12 max-w-6xl bg-transparent p-0">
-            <div class="flex flex-col gap-4 rounded-3xl bg-base-100 p-6 lg:p-10">
+        <div class="modal-box w-11/12 max-w-6xl bg-transparent p-0 h-[90vh]">
+            <div class="flex flex-col gap-4 rounded-3xl bg-base-100 p-6 lg:p-10 h-full">
                 <div class="flex flex-col gap-2 border-b border-base-200 pb-6">
                     <p class="text-base-content/60 text-base">动议控制面板</p>
                     <h3 class="text-3xl font-bold">选择并配置要发起的动议</h3>
                 </div>
 
-                <div class="grid gap-6 lg:grid-cols-[35%_65%]">
-                    <section class="flex flex-col gap-4 rounded-3xl border border-base-200 bg-base-200/40 p-4 lg:p-6">
+                <div class="grid gap-6 lg:grid-cols-[35%_65%] h-[70vh] min-h-[360px]">
+                    <section
+                        class="flex flex-col gap-4 rounded-3xl border border-base-200 bg-base-200/40 p-4 lg:p-6 h-full overflow-hidden">
                         <header class="flex items-center justify-between">
                             <h4 class="text-xl font-semibold">可用动议</h4>
                             <span class="badge badge-neutral badge-lg">共 {{ motions.length }} 项</span>
                         </header>
-                        <div class="space-y-3 overflow-y-auto pr-1" style="max-height: 24rem">
+                        <div class="space-y-3 overflow-y-auto pr-1 max-h-full">
                             <button v-for="motion in motions" :key="motion.id" type="button"
                                 class="w-full rounded-2xl border px-4 py-4 text-left transition" :class="selectedMotionId === motion.id
                                     ? 'border-primary bg-primary/10 shadow-lg'
@@ -27,9 +28,9 @@
                         </div>
                     </section>
 
-                    <section class="flex flex-col gap-6 rounded-3xl border border-base-200 bg-base-200/40 p-4 lg:p-6">
+                    <section
+                        class="flex flex-col gap-6 rounded-3xl border border-base-200 bg-base-200/40 p-4 lg:p-6 h-full overflow-y-auto">
                         <header class="flex flex-col gap-2">
-                            <p class="text-base-content/60 text-base">当前选择</p>
                             <h4 class="text-3xl font-semibold">{{ activeMotion?.title }}</h4>
                             <p class="text-sm text-base-content/70">{{ activeMotion?.description }}</p>
                         </header>
