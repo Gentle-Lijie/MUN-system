@@ -2,6 +2,9 @@
   "github.copilot.chat.codeGeneration.instructions": [
     {
       "file": "./.vscode/daisyui.md"
+    },
+    {
+      "file": "./.vscode/auth-overview.md"
     }
   ]
 }

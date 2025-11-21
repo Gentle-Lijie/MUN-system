@@ -1,33 +1,57 @@
+"""Configuration helpers for the Flask application."""
+
+from __future__ import annotations
+
+import os
 from functools import lru_cache
-from typing import List
+from pathlib import Path
+from typing import Type
 from urllib.parse import quote_plus
 
-from pydantic_settings import BaseSettings, SettingsConfigDict
+from dotenv import load_dotenv
+
+BASE_DIR = Path(__file__).resolve().parent.parent
+ENV_PATH = BASE_DIR / '.env'
+
+if ENV_PATH.exists():
+    load_dotenv(ENV_PATH)
+else:
+    load_dotenv()
 
 
-class Settings(BaseSettings):
-    app_name: str = 'MUN Control API'
-    cors_origins: List[str] = ['http://localhost:5173']
-    mysql_host: str = 'remote.mysql.host'
-    mysql_port: int = 3306
-    mysql_user: str = 'mun_user'
-    mysql_password: str = 'change_me'
-    mysql_database: str = 'mun_system'
+def _build_mysql_uri() -> str:
+    user = quote_plus(os.getenv('MYSQL_USER', 'mun_user'))
+    password = quote_plus(os.getenv('MYSQL_PASSWORD', 'change_me'))
+    host = os.getenv('MYSQL_HOST', 'localhost')
+    port = os.getenv('MYSQL_PORT', '3306')
+    database = os.getenv('MYSQL_DATABASE', 'mun_system')
+    return f'mysql+pymysql://{user}:{password}@{host}:{port}/{database}?charset=utf8mb4'
 
-    model_config = SettingsConfigDict(env_file='.env', env_file_encoding='utf-8')
 
-    @property
-    def sqlalchemy_url(self) -> str:
-        user = quote_plus(self.mysql_user)
-        password = quote_plus(self.mysql_password)
-        host = self.mysql_host
-        database = self.mysql_database
-        return f'mysql+aiomysql://{user}:{password}@{host}:{self.mysql_port}/{database}?charset=utf8mb4'
+class BaseConfig:
+    """Default configuration used for development and production."""
+
+    APP_NAME = os.getenv('APP_NAME', 'MUN Control Flask API')
+    SQLALCHEMY_DATABASE_URI = os.getenv('DATABASE_URL') or _build_mysql_uri()
+    SQLALCHEMY_TRACK_MODIFICATIONS = False
+    SQLALCHEMY_ENGINE_OPTIONS = {'pool_pre_ping': True}
+    JSON_SORT_KEYS = False
+
+
+class TestingConfig(BaseConfig):
+    TESTING = True
+    SQLALCHEMY_DATABASE_URI = 'sqlite:///:memory:'
+
+
+CONFIG_MAP: dict[str, Type[BaseConfig]] = {
+    'default': BaseConfig,
+    'testing': TestingConfig,
+}
 
 
 @lru_cache(maxsize=1)
-def get_settings() -> Settings:
-    return Settings()
+def get_config(config_name: str | None = None) -> Type[BaseConfig]:
+    return CONFIG_MAP.get(config_name or 'default', BaseConfig)
 
 
-settings = get_settings()
+__all__ = ['get_config', 'BaseConfig']

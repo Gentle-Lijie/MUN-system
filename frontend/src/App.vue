@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { RouterLink, RouterView, useRoute } from 'vue-router'
+import { RouterLink, RouterView, useRoute, useRouter } from 'vue-router'
 import { ref, onMounted, reactive, computed, watch } from 'vue'
 
 type UserProfile = {
@@ -8,6 +8,7 @@ type UserProfile = {
 }
 
 const navItems = [
+  { label: '欢迎', to: '/welcome' },
   { label: '显示大屏', to: '/display' },
   { label: '会议管理', to: '/management' },
   { label: '后台功能', to: '/backend' },
@@ -22,16 +23,34 @@ const showLoginModal = ref(false)
 const loginSubmitting = ref(false)
 const loginError = ref('')
 const showLoginRequiredModal = ref(false)
+const showChangePasswordModal = ref(false)
+const changePasswordSubmitting = ref(false)
+const changePasswordError = ref('')
 
 const route = useRoute()
+const router = useRouter()
 const loginForm = reactive({
   email: '',
   password: '',
 })
+const changePasswordForm = reactive({
+  currentPassword: '',
+  newPassword: '',
+  confirmPassword: '',
+})
 
 const isLoggedIn = computed(() => Boolean(user.value))
-const userInitials = computed(() => user.value?.username?.slice(0, 2).toUpperCase() ?? '')
-const needsLogin = computed(() => !isLoggedIn.value && route.path !== '/display')
+const userInitials = computed(() => user.value?.username?.slice(-2).toUpperCase() ?? '')
+
+const getAvatarStyle = (name: string) => {
+    const colors = ['#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FFEAA7', '#DDA0DD', '#98D8C8', '#F7DC6F', '#BB8FCE', '#85C1E9'];
+    const hash = name.split('').reduce((a, b) => a + b.charCodeAt(0), 0);
+    const colorIndex = hash % colors.length;
+    const backgroundColor = colors[colorIndex];
+    const color = theme.value === 'light' ? '#FFFFFF' : '#000000';
+    return { backgroundColor, color };
+}
+const needsLogin = computed(() => !isLoggedIn.value && route.path !== '/display' && route.path !== '/welcome')
 
 const toggleTheme = () => {
   theme.value = theme.value === 'light' ? 'dark' : 'light'
@@ -47,6 +66,18 @@ const openLoginModal = () => {
 
 const closeLoginModal = () => {
   showLoginModal.value = false
+}
+
+const openChangePasswordModal = () => {
+  changePasswordError.value = ''
+  changePasswordForm.currentPassword = ''
+  changePasswordForm.newPassword = ''
+  changePasswordForm.confirmPassword = ''
+  showChangePasswordModal.value = true
+}
+
+const closeChangePasswordModal = () => {
+  showChangePasswordModal.value = false
 }
 
 const fetchUserProfile = async () => {
@@ -123,16 +154,70 @@ const handleLogin = async () => {
 
 const handleLogout = async () => {
   try {
-    await fetch('/api/auth/logout', { method: 'POST', credentials: 'include' })
+    const response = await fetch('/api/auth/logout', { method: 'POST', credentials: 'include' })
+    if (response.ok) {
+      const data = await response.json()
+      alert(data.message || '登出成功')
+      user.value = null
+      // 跳转到 welcome 页面
+      router.push('/welcome')
+    } else {
+      throw new Error('登出失败')
+    }
   } catch (error) {
     console.warn('登出接口暂不可用：', error)
-  } finally {
     user.value = null
+    router.push('/welcome')
   }
 }
 
 const handleChangePassword = () => {
-  window.alert('请接入后端接口以完成修改密码流程。')
+  openChangePasswordModal()
+}
+
+const handleChangePasswordSubmit = async () => {
+  if (!changePasswordForm.currentPassword || !changePasswordForm.newPassword) {
+    changePasswordError.value = '请输入当前密码和新密码'
+    return
+  }
+  if (changePasswordForm.newPassword !== changePasswordForm.confirmPassword) {
+    changePasswordError.value = '新密码和确认密码不匹配'
+    return
+  }
+  if (changePasswordForm.newPassword.length < 6) {
+    changePasswordError.value = '新密码至少需要6个字符'
+    return
+  }
+
+  changePasswordSubmitting.value = true
+  changePasswordError.value = ''
+  try {
+    const response = await fetch('/api/auth/password', {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      credentials: 'include',
+      body: JSON.stringify({
+        currentPassword: changePasswordForm.currentPassword,
+        newPassword: changePasswordForm.newPassword,
+      }),
+    })
+
+    if (response.ok) {
+      const data = await response.json()
+      alert(data.message || '密码修改成功')
+      closeChangePasswordModal()
+    } else {
+      const errorData = await response.json()
+      throw new Error(errorData.message || '密码修改失败')
+    }
+  } catch (error) {
+    console.warn('修改密码失败：', error)
+    changePasswordError.value = error instanceof Error ? error.message : '修改密码失败，请重试'
+  } finally {
+    changePasswordSubmitting.value = false
+  }
 }
 
 onMounted(() => {
@@ -156,7 +241,7 @@ watch(needsLogin, (newVal) => {
       </button>
       <main class="flex-1 overflow-hidden">
         <div class="h-full">
-          <RouterView v-if="isLoggedIn || route.path === '/display'" />
+          <RouterView v-if="isLoggedIn || route.path === '/display' || route.path.startsWith('/backend') || route.path === '/welcome'" />
         </div>
       </main>
     </div>
@@ -171,7 +256,7 @@ watch(needsLogin, (newVal) => {
           <div class="flex items-center gap-2">
             <div v-if="isLoggedIn" class="dropdown dropdown-end">
               <div tabindex="0" role="button" class="btn btn-ghost btn-circle avatar border border-base-200">
-                <div class="w-10 rounded-full">
+                <div class="w-10 rounded-full" :style="user?.avatarUrl ? {} : getAvatarStyle(user?.username || '')">
                   <img v-if="user?.avatarUrl" :src="user.avatarUrl" alt="用户头像" />
                   <span v-else class="text-sm font-semibold flex items-center justify-center h-full w-full">{{
                     userInitials }}</span>
@@ -277,5 +362,56 @@ watch(needsLogin, (newVal) => {
         <button class="btn btn-primary" @click="openLoginModal(); showLoginRequiredModal = false">去登录</button>
       </div>
     </div>
+  </div>
+
+  <div class="modal" :class="{ 'modal-open': showChangePasswordModal }">
+    <div class="modal-box space-y-4">
+      <h3 class="font-bold text-lg">修改密码</h3>
+      <form class="space-y-4" @submit.prevent="handleChangePasswordSubmit">
+        <fieldset class="fieldset space-y-3 border border-base-300 rounded-box p-4">
+          <legend class="fieldset-legend">密码信息</legend>
+          <label class="input input-bordered flex items-center gap-2">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
+              stroke="currentColor" class="w-5 h-5">
+              <path stroke-linecap="round" stroke-linejoin="round"
+                d="M16.5 10.125V6.75a4.5 4.5 0 10-9 0v3.375M18.75 10.125h-13.5A1.125 1.125 0 004.125 11.25v8.625c0 .621.504 1.125 1.125 1.125h13.5a1.125 1.125 0 001.125-1.125V11.25a1.125 1.125 0 00-1.125-1.125z" />
+            </svg>
+            <input type="password" class="grow" placeholder="当前密码" v-model="changePasswordForm.currentPassword"
+              required />
+          </label>
+          <label class="input input-bordered flex items-center gap-2">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
+              stroke="currentColor" class="w-5 h-5">
+              <path stroke-linecap="round" stroke-linejoin="round"
+                d="M16.5 10.125V6.75a4.5 4.5 0 10-9 0v3.375M18.75 10.125h-13.5A1.125 1.125 0 004.125 11.25v8.625c0 .621.504 1.125 1.125 1.125h13.5a1.125 1.125 0 001.125-1.125V11.25a1.125 1.125 0 00-1.125-1.125z" />
+            </svg>
+            <input type="password" class="grow" placeholder="新密码" v-model="changePasswordForm.newPassword" required />
+          </label>
+          <label class="input input-bordered flex items-center gap-2">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
+              stroke="currentColor" class="w-5 h-5">
+              <path stroke-linecap="round" stroke-linejoin="round"
+                d="M16.5 10.125V6.75a4.5 4.5 0 10-9 0v3.375M18.75 10.125h-13.5A1.125 1.125 0 004.125 11.25v8.625c0 .621.504 1.125 1.125 1.125h13.5a1.125 1.125 0 001.125-1.125V11.25a1.125 1.125 0 00-1.125-1.125z" />
+            </svg>
+            <input type="password" class="grow" placeholder="确认新密码" v-model="changePasswordForm.confirmPassword"
+              required />
+          </label>
+          <p class="fieldset-label">新密码至少需要6个字符</p>
+        </fieldset>
+        <div v-if="changePasswordError" class="alert alert-error alert-soft text-sm">
+          <span>{{ changePasswordError }}</span>
+        </div>
+        <div class="modal-action">
+          <button type="button" class="btn btn-ghost min-w-[4rem]" @click="closeChangePasswordModal">取消</button>
+          <button type="submit" class="btn btn-primary min-w-[4rem]" :disabled="changePasswordSubmitting">
+            <span v-if="changePasswordSubmitting" class="loading loading-spinner loading-sm"></span>
+            <span>修改</span>
+          </button>
+        </div>
+      </form>
+    </div>
+    <form method="dialog" class="modal-backdrop">
+      <button @click="closeChangePasswordModal">关闭</button>
+    </form>
   </div>
 </template>

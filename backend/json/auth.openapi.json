@@ -1,0 +1,307 @@
+{
+    "openapi": "3.0.3",
+    "info": {
+        "title": "MUN System Authentication API",
+        "version": "1.0.0",
+        "description": "OpenAPI document describing the authentication endpoints implemented in the Flask backend."
+    },
+    "servers": [
+        {
+            "url": "http://localhost:8000",
+            "description": "Local Flask development server"
+        }
+    ],
+    "paths": {
+        "/api/auth/login": {
+            "post": {
+                "summary": "Login with email and password",
+                "operationId": "login",
+                "x-apifox-folder": "auth",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/LoginRequest"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Login succeeded",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/LoginResponse"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Missing credentials"
+                    },
+                    "401": {
+                        "description": "Invalid credentials"
+                    }
+                }
+            }
+        },
+        "/api/auth/logout": {
+            "post": {
+                "summary": "Logout current session",
+                "operationId": "logout",
+                "x-apifox-folder": "auth",
+                "security": [
+                    {
+                        "SessionToken": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Logout succeeded",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/LogoutSuccessResponse"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "No active session",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/LogoutFailureResponse"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/auth/profile": {
+            "get": {
+                "summary": "Get current authenticated user profile",
+                "operationId": "profile",
+                "x-apifox-folder": "auth",
+                "security": [
+                    {
+                        "SessionToken": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Profile data",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/User"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Session required"
+                    }
+                }
+            }
+        },
+        "/api/auth/password": {
+            "patch": {
+                "summary": "Update password for the current user",
+                "operationId": "changePassword",
+                "x-apifox-folder": "auth",
+                "security": [
+                    {
+                        "SessionToken": []
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/PasswordChangeRequest"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Password updated",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/MessageResponse"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Validation error"
+                    },
+                    "401": {
+                        "description": "Current password incorrect or session missing"
+                    }
+                }
+            }
+        }
+    },
+    "components": {
+        "schemas": {
+            "LoginRequest": {
+                "type": "object",
+                "required": [
+                    "email",
+                    "password"
+                ],
+                "properties": {
+                    "email": {
+                        "type": "string",
+                        "format": "email"
+                    },
+                    "password": {
+                        "type": "string",
+                        "format": "password",
+                        "minLength": 8
+                    }
+                }
+            },
+            "LoginResponse": {
+                "type": "object",
+                "properties": {
+                    "token": {
+                        "type": "string",
+                        "description": "Opaque session token"
+                    },
+                    "user": {
+                        "$ref": "#/components/schemas/User"
+                    }
+                }
+            },
+            "User": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "integer"
+                    },
+                    "name": {
+                        "type": "string"
+                    },
+                    "email": {
+                        "type": "string",
+                        "format": "email"
+                    },
+                    "role": {
+                        "type": "string",
+                        "enum": [
+                            "admin",
+                            "dais",
+                            "delegate"
+                        ]
+                    },
+                    "organization": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "phone": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "lastLogin": {
+                        "type": "string",
+                        "format": "date-time",
+                        "nullable": true
+                    },
+                    "createdAt": {
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "updatedAt": {
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "permissions": {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        }
+                    }
+                }
+            },
+            "PasswordChangeRequest": {
+                "type": "object",
+                "required": [
+                    "currentPassword",
+                    "newPassword"
+                ],
+                "properties": {
+                    "currentPassword": {
+                        "type": "string",
+                        "format": "password"
+                    },
+                    "newPassword": {
+                        "type": "string",
+                        "format": "password",
+                        "minLength": 12
+                    }
+                }
+            },
+            "MessageResponse": {
+                "type": "object",
+                "properties": {
+                    "message": {
+                        "type": "string"
+                    }
+                }
+            },
+            "LogoutResponse": {
+                "type": "object",
+                "properties": {
+                    "success": {
+                        "type": "boolean",
+                        "description": "Whether the logout was successful"
+                    }
+                }
+            },
+            "LogoutSuccessResponse": {
+                "type": "object",
+                "properties": {
+                    "success": {
+                        "type": "boolean",
+                        "enum": [
+                            true
+                        ]
+                    },
+                    "message": {
+                        "type": "string"
+                    }
+                }
+            },
+            "LogoutFailureResponse": {
+                "type": "object",
+                "properties": {
+                    "success": {
+                        "type": "boolean",
+                        "enum": [
+                            false
+                        ]
+                    },
+                    "message": {
+                        "type": "string"
+                    }
+                }
+            }
+        },
+        "securitySchemes": {
+            "SessionToken": {
+                "type": "apiKey",
+                "name": "Authorization",
+                "in": "header",
+                "description": "Send `Bearer <token>` header. A `mun_session` HttpOnly cookie is also accepted by the server."
+            }
+        }
+    }
+}

@@ -91,11 +91,7 @@ const totalFeatures = featureGroups.reduce((sum, group) => sum + group.items.len
             </aside>
             <section
                 class="bg-base-100 border border-base-200 rounded-2xl p-0 shadow-sm overflow-y-auto flex-1 h-[93vh]">
-                <RouterView v-slot="{ Component }">
-                    <transition name="fade" mode="out-in">
-                        <component :is="Component" />
-                    </transition>
-                </RouterView>
+                <RouterView />
             </section>
         </section>
     </div>

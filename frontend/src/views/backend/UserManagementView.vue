@@ -69,6 +69,20 @@ const toggleUserStatus = (record: UserRecord) => {
 const selectUser = (record: UserRecord) => {
     selectedUser.value = record
 }
+
+const getUserInitials = (name: string) => {
+    return name.slice(-2).toUpperCase()
+}
+
+const getAvatarStyle = (name: string) => {
+    const colors = ['#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FFEAA7', '#DDA0DD', '#98D8C8', '#F7DC6F', '#BB8FCE', '#85C1E9'];
+    const hash = name.split('').reduce((a, b) => a + b.charCodeAt(0), 0);
+    const colorIndex = hash % colors.length;
+    const backgroundColor = colors[colorIndex];
+    const theme = document.documentElement.getAttribute('data-theme') || 'light';
+    const color = theme === 'light' ? '#FFFFFF' : '#000000';
+    return { backgroundColor, color };
+}
 </script>
 
 <template>
@@ -97,6 +111,7 @@ const selectUser = (record: UserRecord) => {
                     <table class="table table-zebra">
                         <thead>
                             <tr>
+                                <th>头像</th>
                                 <th>ID</th>
                                 <th>姓名</th>
                                 <th>角色</th>
@@ -108,6 +123,13 @@ const selectUser = (record: UserRecord) => {
                         <tbody>
                             <tr v-for="user in filteredUsers" :key="user.id" @click="selectUser(user)"
                                 class="cursor-pointer">
+                                <td>
+                                    <div class="avatar placeholder">
+                                        <div class="w-10 rounded-full flex justify-center items-center" :style="getAvatarStyle(user.name)">
+                                            <span class="text-sm font-semibold">{{ getUserInitials(user.name) }}</span>
+                                        </div>
+                                    </div>
+                                </td>
                                 <td>{{ user.id }}</td>
                                 <td class="font-semibold">{{ user.name }}</td>
                                 <td>
@@ -133,7 +155,7 @@ const selectUser = (record: UserRecord) => {
                                 </td>
                             </tr>
                             <tr v-if="filteredUsers.length === 0">
-                                <td colspan="6" class="text-center text-base-content/60">暂无符合条件的用户</td>
+                                <td colspan="7" class="text-center text-base-content/60">暂无符合条件的用户</td>
                             </tr>
                         </tbody>
                     </table>

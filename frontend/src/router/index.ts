@@ -5,6 +5,7 @@ const ManagementConsole = () => import('@/views/ManagementConsole.vue')
 const MiniWindow = () => import('@/views/MiniWindow.vue')
 const MotionLauncher = () => import('@/views/MotionLauncher.vue')
 const FileSelect = () => import('@/views/FileSelect.vue')
+const WelcomeView = () => import('@/views/WelcomeView.vue')
 const BackendWorkspace = () => import('@/views/backend/BackendWorkspace.vue')
 const UserManagementView = () => import('@/views/backend/UserManagementView.vue')
 const VenueManagementView = () => import('@/views/backend/VenueManagementView.vue')
@@ -25,7 +26,13 @@ const router = createRouter({
   routes: [
     {
       path: '/',
-      redirect: '/display',
+      redirect: '/welcome',
+    },
+    {
+      path: '/welcome',
+      name: 'welcome',
+      component: WelcomeView,
+      meta: { title: '欢迎' },
     },
     {
       path: '/display',
