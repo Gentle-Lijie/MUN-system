@@ -29,7 +29,8 @@ class Committee(db.Model):
     dais_json = db.Column(db.JSON)
     time_config = db.Column(db.JSON)
     created_by = db.Column(db.Integer, db.ForeignKey('Users.id'))
-    created_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
+    created_at = db.Column(db.DateTime, nullable=False,
+                           default=datetime.utcnow)
     updated_at = db.Column(
         db.DateTime,
         nullable=False,
@@ -65,7 +66,8 @@ class Committee(db.Model):
     def dais(self) -> list[dict[str, Any]]:
         if not self.dais_json:
             return []
-        ids = [d['id'] for d in self.dais_json if isinstance(d, dict) and 'id' in d]
+        ids = [d['id']
+               for d in self.dais_json if isinstance(d, dict) and 'id' in d]
         if not ids:
             return []
         users = {u.id: u for u in User.query.filter(User.id.in_(ids)).all()}
@@ -85,7 +87,8 @@ class Committee(db.Model):
         if value is None:
             self.dais_json = []
         else:
-            self.dais_json = [{'id': int(v['id']), 'role': str(v.get('role', '主席团'))} for v in value]
+            self.dais_json = [{'id': int(v['id']), 'role': str(
+                v.get('role', '主席团'))} for v in value]
 
     @property
     def time_config_data(self) -> dict[str, Any]:
@@ -108,7 +111,8 @@ class CommitteeSession(db.Model):
     chair = db.Column(db.String(255))
     start_time = db.Column(db.DateTime)
     duration_minutes = db.Column(db.Integer, nullable=False, default=20)
-    created_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
+    created_at = db.Column(db.DateTime, nullable=False,
+                           default=datetime.utcnow)
     updated_at = db.Column(
         db.DateTime,
         nullable=False,

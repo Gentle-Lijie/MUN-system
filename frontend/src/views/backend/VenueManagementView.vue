@@ -73,7 +73,7 @@ const fetchUsers = async () => {
     })
     if (!response.ok) throw new Error('Failed to fetch users')
     const data = await response.json()
-    users.value = data.items || []
+    users.value = (data.items || []).filter((user: any) => user.role === 'admin' || user.role === 'dais')
   } catch (error) {
     console.error('Error fetching users:', error)
   }
@@ -110,6 +110,20 @@ const addSession = async (venueId: number, session: Omit<CommitteeSession, 'id'>
     if (committee) committee.sessions.push(newSession)
   } catch (error) {
     console.error('Error adding session:', error)
+  }
+}
+
+const deleteSession = async (venueId: number, sessionId: number) => {
+  try {
+    const response = await fetch(`/api/venues/${venueId}/sessions/${sessionId}`, {
+      method: 'DELETE',
+      credentials: 'include'
+    })
+    if (!response.ok) throw new Error('Failed to delete session')
+    const committee = committees.value.find(c => c.id === venueId)
+    if (committee) committee.sessions = committee.sessions.filter(s => s.id !== sessionId)
+  } catch (error) {
+    console.error('Error deleting session:', error)
   }
 }
 
@@ -153,12 +167,13 @@ const filteredUsers = computed(() =>
   )
 )
 
-const confirmDaisSelection = () => {
+const confirmDaisSelection = async () => {
   if (!selectedCommittee.value) return
+  const newDais = [...selectedCommittee.value.dais]
   for (const id of selectedUserIds.value) {
     const user = users.value.find(u => u.id === id)
-    if (user && !selectedCommittee.value.dais.some(d => d.id === id)) {
-      selectedCommittee.value.dais.push({
+    if (user && !newDais.some(d => d.id === id)) {
+      newDais.push({
         id,
         name: user.name,
         role: '主席团',
@@ -166,6 +181,7 @@ const confirmDaisSelection = () => {
       })
     }
   }
+  await updateVenue(selectedCommittee.value.id, { dais: newDais })
   selectedUserIds.value = []
   showDaisModal.value = false
 }
@@ -190,9 +206,14 @@ const selectCommittee = (committeeId: number) => {
   selectedId.value = committeeId
 }
 
-const handleSaveBaseInfo = () => {
+const handleSaveBaseInfo = async () => {
   if (!selectedCommittee.value) return
-  window.alert(`已保存 ${selectedCommittee.value.name} 的基础信息（模拟）`)
+  await updateVenue(selectedCommittee.value.id, {
+    name: selectedCommittee.value.name,
+    venue: selectedCommittee.value.venue,
+    status: selectedCommittee.value.status,
+    capacity: selectedCommittee.value.capacity
+  })
 }
 
 const handleAddSession = async () => {
@@ -209,14 +230,15 @@ const handleAddSession = async () => {
   sessionForm.durationMinutes = 20
 }
 
-const handleRemoveSession = (sessionId: number) => {
+const handleRemoveSession = async (sessionId: number) => {
   if (!selectedCommittee.value) return
-  selectedCommittee.value.sessions = selectedCommittee.value.sessions.filter((session) => session.id !== sessionId)
+  await deleteSession(selectedCommittee.value.id, sessionId)
 }
 
-const handleRemoveDaisMember = (memberId: number) => {
+const handleRemoveDaisMember = async (memberId: number) => {
   if (!selectedCommittee.value) return
-  selectedCommittee.value.dais = selectedCommittee.value.dais.filter((member) => member.id !== memberId)
+  const newDais = selectedCommittee.value.dais.filter((member) => member.id !== memberId)
+  await updateVenue(selectedCommittee.value.id, { dais: newDais })
 }
 
 const handleSaveTimeConfig = async () => {
