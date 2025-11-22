@@ -49,21 +49,6 @@ const permissionsModalOpen = ref(false)
 const editingPermissions = ref<string[]>([])
 const savingPermissions = ref(false)
 
-const allPermissions = [
-    'users:manage',
-    'presidium:manage',
-    'delegates:manage',
-    'logs:read',
-    'timeline:update',
-    'crisis:dispatch',
-    'messages:broadcast',
-    'delegate:self',
-    'documents:submit',
-    'messages:send',
-    'observer:read',
-    'reports:view'
-]
-
 const permissionGroups = {
     admin: ['users:manage', 'presidium:manage', 'delegates:manage', 'logs:read'],
     dais: ['presidium:manage', 'timeline:update', 'crisis:dispatch', 'messages:broadcast'],
@@ -71,7 +56,7 @@ const permissionGroups = {
     observer: ['observer:read', 'reports:view']
 }
 
-const permissionLabels = {
+const permissionLabels: Record<string, string> = {
     'users:manage': '用户管理',
     'presidium:manage': '主席团管理',
     'delegates:manage': '代表管理',
@@ -219,8 +204,10 @@ const triggerImport = () => {
 
 const handleImportFile = async (event: Event) => {
     const target = event.target as HTMLInputElement
-    if (!target.files || target.files.length === 0) return
-    const file = target.files[0]
+    const files = target.files
+    if (!files || files.length === 0) return
+    const file = files.item(0)
+    if (!file) return
     target.value = ''
     importing.value = true
     successMessage.value = ''

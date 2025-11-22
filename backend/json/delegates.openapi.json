@@ -1,0 +1,431 @@
+{
+    "openapi": "3.0.3",
+    "info": {
+        "title": "MUN Delegate Management API",
+        "version": "1.0.0",
+        "description": "OpenAPI schema for delegate assignment, import/export, and committee-specific listing endpoints."
+    },
+    "paths": {
+        "/api/delegates": {
+            "get": {
+                "summary": "List delegates",
+                "description": "Returns delegates with optional filtering by committee/user/search keyword. Requires presidium-level access (admin, dais, or users with presidium:manage).",
+                "operationId": "listDelegates",
+                "x-apifox-folder": "delegates",
+                "parameters": [
+                    {
+                        "name": "committeeId",
+                        "in": "query",
+                        "schema": {
+                            "type": "integer",
+                            "minimum": 1
+                        },
+                        "description": "Filter by committee id"
+                    },
+                    {
+                        "name": "committeeCode",
+                        "in": "query",
+                        "schema": {
+                            "type": "string"
+                        },
+                        "description": "Filter by committee code"
+                    },
+                    {
+                        "name": "userId",
+                        "in": "query",
+                        "schema": {
+                            "type": "integer",
+                            "minimum": 1
+                        },
+                        "description": "Filter by delegate user id"
+                    },
+                    {
+                        "name": "search",
+                        "in": "query",
+                        "schema": {
+                            "type": "string"
+                        },
+                        "description": "Keyword applied to user name/email, committee, and country"
+                    },
+                    {
+                        "name": "page",
+                        "in": "query",
+                        "schema": {
+                            "type": "integer",
+                            "minimum": 1,
+                            "default": 1
+                        },
+                        "description": "Page index (1-based)"
+                    },
+                    {
+                        "name": "pageSize",
+                        "in": "query",
+                        "schema": {
+                            "type": "integer",
+                            "minimum": 1,
+                            "maximum": 500,
+                            "default": 200
+                        },
+                        "description": "Number of items per page"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Delegate list",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/DelegateCollection"
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "post": {
+                "summary": "Create or update a delegate assignment",
+                "description": "Creates a new delegate assignment when no id is supplied, otherwise updates the existing delegate. Requires presidium-level access.",
+                "operationId": "upsertDelegate",
+                "x-apifox-folder": "delegates",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/DelegateUpsertRequest"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Delegate created",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Delegate"
+                                }
+                            }
+                        }
+                    },
+                    "200": {
+                        "description": "Delegate updated",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Delegate"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Validation error"
+                    }
+                }
+            }
+        },
+        "/api/delegates/import": {
+            "post": {
+                "summary": "Import delegates from CSV",
+                "description": "Accepts a CSV file with headers userEmail, committeeCode, country, vetoAllowed. Rows update existing assignments or create new ones.",
+                "operationId": "importDelegates",
+                "x-apifox-folder": "delegates",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "multipart/form-data": {
+                            "schema": {
+                                "type": "object",
+                                "required": [
+                                    "file"
+                                ],
+                                "properties": {
+                                    "file": {
+                                        "type": "string",
+                                        "format": "binary",
+                                        "description": "CSV file to import"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Import summary",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/DelegateImportResult"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid CSV"
+                    }
+                }
+            }
+        },
+        "/api/delegates/export": {
+            "get": {
+                "summary": "Export delegates as CSV",
+                "description": "Exports all delegates (with optional same filters as listing) in an import-compatible CSV format.",
+                "operationId": "exportDelegates",
+                "x-apifox-folder": "delegates",
+                "parameters": [
+                    {
+                        "name": "committeeId",
+                        "in": "query",
+                        "schema": {
+                            "type": "integer",
+                            "minimum": 1
+                        },
+                        "description": "Filter by committee id"
+                    },
+                    {
+                        "name": "committeeCode",
+                        "in": "query",
+                        "schema": {
+                            "type": "string"
+                        },
+                        "description": "Filter by committee code"
+                    },
+                    {
+                        "name": "userId",
+                        "in": "query",
+                        "schema": {
+                            "type": "integer",
+                            "minimum": 1
+                        },
+                        "description": "Filter by delegate user id"
+                    },
+                    {
+                        "name": "search",
+                        "in": "query",
+                        "schema": {
+                            "type": "string"
+                        },
+                        "description": "Keyword filter"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "CSV output",
+                        "content": {
+                            "text/csv": {
+                                "schema": {
+                                    "type": "string",
+                                    "format": "binary"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/venues/{committeeId}/delegate": {
+            "parameters": [
+                {
+                    "name": "committeeId",
+                    "in": "path",
+                    "required": true,
+                    "schema": {
+                        "type": "integer",
+                        "minimum": 1
+                    }
+                }
+            ],
+            "get": {
+                "summary": "List delegates inside a committee",
+                "description": "Returns all delegates assigned to the specified committee id, reusing the standard delegate schema.",
+                "operationId": "listCommitteeDelegates",
+                "x-apifox-folder": "delegates",
+                "responses": {
+                    "200": {
+                        "description": "Delegates for the committee",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/CommitteeDelegatesResponse"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Committee not found"
+                    }
+                }
+            }
+        }
+    },
+    "components": {
+        "schemas": {
+            "Delegate": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "integer"
+                    },
+                    "userId": {
+                        "type": "integer"
+                    },
+                    "userName": {
+                        "type": "string"
+                    },
+                    "userEmail": {
+                        "type": "string",
+                        "format": "email"
+                    },
+                    "userOrganization": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "committeeId": {
+                        "type": "integer"
+                    },
+                    "committeeName": {
+                        "type": "string"
+                    },
+                    "committeeCode": {
+                        "type": "string"
+                    },
+                    "country": {
+                        "type": "string"
+                    },
+                    "vetoAllowed": {
+                        "type": "boolean"
+                    },
+                    "createdAt": {
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "updatedAt": {
+                        "type": "string",
+                        "format": "date-time"
+                    }
+                },
+                "required": [
+                    "id",
+                    "userId",
+                    "committeeId",
+                    "country",
+                    "vetoAllowed"
+                ]
+            },
+            "DelegateCollection": {
+                "type": "object",
+                "properties": {
+                    "items": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/Delegate"
+                        }
+                    },
+                    "total": {
+                        "type": "integer"
+                    },
+                    "page": {
+                        "type": "integer"
+                    },
+                    "pageSize": {
+                        "type": "integer"
+                    }
+                },
+                "required": [
+                    "items",
+                    "total"
+                ]
+            },
+            "DelegateUpsertRequest": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "integer",
+                        "description": "Supply to update an existing delegate"
+                    },
+                    "userId": {
+                        "type": "integer",
+                        "minimum": 1
+                    },
+                    "committeeId": {
+                        "type": "integer",
+                        "minimum": 1
+                    },
+                    "country": {
+                        "type": "string"
+                    },
+                    "vetoAllowed": {
+                        "type": "boolean"
+                    }
+                },
+                "required": [
+                    "country"
+                ]
+            },
+            "DelegateImportResult": {
+                "type": "object",
+                "properties": {
+                    "created": {
+                        "type": "integer"
+                    },
+                    "updated": {
+                        "type": "integer"
+                    },
+                    "errors": {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        }
+                    }
+                },
+                "required": [
+                    "created",
+                    "updated",
+                    "errors"
+                ]
+            },
+            "CommitteeSummary": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "integer"
+                    },
+                    "name": {
+                        "type": "string"
+                    },
+                    "code": {
+                        "type": "string"
+                    }
+                },
+                "required": [
+                    "id",
+                    "name",
+                    "code"
+                ]
+            },
+            "CommitteeDelegatesResponse": {
+                "type": "object",
+                "properties": {
+                    "committee": {
+                        "$ref": "#/components/schemas/CommitteeSummary"
+                    },
+                    "items": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/Delegate"
+                        }
+                    },
+                    "total": {
+                        "type": "integer"
+                    }
+                },
+                "required": [
+                    "committee",
+                    "items",
+                    "total"
+                ]
+            }
+        }
+    }
+}

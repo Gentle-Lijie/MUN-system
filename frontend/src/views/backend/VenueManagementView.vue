@@ -274,7 +274,7 @@ fetchUsers()
         <h2 class="text-2xl font-bold">会场管理</h2>
         <p class="text-sm text-base-content/70">配置会场信息、议程、主席团，以及时间轴/大屏同步。</p>
       </div>
-      <button class="btn btn-outline">导出配置</button>
+      <!-- <button class="btn btn-outline">导出配置</button> -->
     </header>
 
     <section class="grid gap-6 xl:grid-cols-[0.6fr,1fr]">
@@ -291,7 +291,7 @@ fetchUsers()
             <option value="all">全部状态</option>
             <option v-for="item in statusOptions" :key="item.value" :value="item.value">{{ item.label }}</option>
           </select>
-          <button class="btn btn-outline">导出配置</button>
+          <!-- <button class="btn btn-outline">导出配置</button> -->
         </div>
 
         <div class="stats stats-vertical md:stats-horizontal shadow-none">

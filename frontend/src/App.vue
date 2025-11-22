@@ -104,17 +104,6 @@ const handleLogin = async () => {
     loginError.value = '请输入邮箱和密码'
     return
   }
-
-  // 硬编码测试账号
-  if (loginForm.email === 'test@example.com' && loginForm.password === 'password123') {
-    user.value = {
-      username: loginForm.email,
-      avatarUrl: `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(loginForm.email)}`,
-    }
-    closeLoginModal()
-    return
-  }
-
   loginSubmitting.value = true
   loginError.value = ''
   try {
@@ -130,23 +119,19 @@ const handleLogin = async () => {
       }),
     })
 
-    if (response.ok) {
-      const data = await response.json()
-      user.value = {
-        username: data?.username ?? loginForm.email,
-        avatarUrl: data?.avatarUrl,
-      }
-    } else {
-      throw new Error('登录失败，请检查邮箱或密码')
+    if (!response.ok) {
+      const errData = await response.json().catch(() => ({}))
+      throw new Error(errData?.message || '登录失败，请检查邮箱或密码')
+    }
+    const data = await response.json()
+    user.value = {
+      username: data?.username ?? loginForm.email,
+      avatarUrl: data?.avatarUrl,
     }
     closeLoginModal()
   } catch (error) {
-    console.warn('登录失败，使用占位数据展示界面：', error)
-    user.value = {
-      username: loginForm.email,
-      avatarUrl: `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(loginForm.email)}`,
-    }
-    closeLoginModal()
+    console.warn('登录失败：', error)
+    loginError.value = error instanceof Error ? error.message : '登录失败，请稍后重试'
   } finally {
     loginSubmitting.value = false
   }
@@ -154,18 +139,10 @@ const handleLogin = async () => {
 
 const handleLogout = async () => {
   try {
-    const response = await fetch('/api/auth/logout', { method: 'POST', credentials: 'include' })
-    if (response.ok) {
-      const data = await response.json()
-      alert(data.message || '登出成功')
-      user.value = null
-      // 跳转到 welcome 页面
-      router.push('/welcome')
-    } else {
-      throw new Error('登出失败')
-    }
+    await fetch('/api/auth/logout', { method: 'POST', credentials: 'include' })
   } catch (error) {
     console.warn('登出接口暂不可用：', error)
+  } finally {
     user.value = null
     router.push('/welcome')
   }

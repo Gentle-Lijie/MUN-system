@@ -55,13 +55,9 @@ class AuthLogoutResource(Resource):
         if user:
             user.clear_session_token()
             db.session.commit()
-            response = jsonify(
-                {'success': True, 'message': 'Logged out successfully'})
-            response.status_code = 200
-        else:
-            response = jsonify(
-                {'success': False, 'message': 'No active session'})
-            response.status_code = 401
+        response = jsonify(
+            {'success': True, 'message': 'Logged out successfully'})
+        response.status_code = 200
         response.delete_cookie(SESSION_COOKIE_NAME)
         return response
 

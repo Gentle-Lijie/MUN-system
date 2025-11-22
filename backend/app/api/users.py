@@ -245,7 +245,7 @@ class UserExportResource(Resource):
         csv_data = buffer.getvalue()
         timestamp = datetime.utcnow().strftime('%Y%m%d_%H%M%S')
         response = make_response(csv_data)
-        response.headers['Content-Type'] = 'text/csv; charset=utf-8'
+        response.headers['Content-Type'] = 'text/csv; charset=gbk'
         response.headers['Content-Disposition'] = f'attachment; filename=users_{timestamp}.csv'
         return response
 

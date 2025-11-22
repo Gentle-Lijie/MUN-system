@@ -95,8 +95,6 @@ CREATE TABLE
         committee_id INT NOT NULL,
         country VARCHAR(255) NOT NULL,
         veto_allowed BOOLEAN DEFAULT FALSE,
-        role_in_committee ENUM ('delegate', 'head_delegate', 'advisor') DEFAULT 'delegate',
-        status ENUM ('active', 'absent') DEFAULT 'active',
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
         FOREIGN KEY (user_id) REFERENCES Users (id),
