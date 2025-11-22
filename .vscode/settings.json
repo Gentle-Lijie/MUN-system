@@ -11,6 +11,9 @@
     },
     {
       "file": "./.vscode/permissions-overview.md"
+    },
+    {
+      "file": "./.vscode/venues-overview.md"
     }
   ]
 }

@@ -9,6 +9,8 @@ from .delegates import DelegateListResource, DelegateResource
 from .health import HealthResource
 from .users import (UserDetailResource, UserExportResource, UserImportResource,
                     UserListResource, UserPermissionsResource)
+from .venues import (VenueDetailResource, VenueListResource,
+                      VenueSessionCollectionResource)
 
 api_bp = Blueprint('api', __name__, url_prefix='/api')
 api = Api(api_bp)
@@ -29,5 +31,10 @@ api.add_resource(UserImportResource, '/users/import', endpoint='users_import')
 api.add_resource(UserExportResource, '/users/export', endpoint='users_export')
 api.add_resource(UserPermissionsResource, '/users/<int:user_id>/permissions',
                  endpoint='user_permissions')
+api.add_resource(VenueListResource, '/venues', endpoint='venues_list')
+api.add_resource(VenueDetailResource, '/venues/<int:venue_id>',
+                 endpoint='venue_detail')
+api.add_resource(VenueSessionCollectionResource,
+                 '/venues/<int:venue_id>/sessions', endpoint='venue_sessions')
 
 __all__ = ['api_bp']

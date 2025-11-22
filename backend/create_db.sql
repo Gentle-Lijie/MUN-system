@@ -24,6 +24,8 @@ DROP TABLE IF EXISTS SpeakerListEntries;
 
 DROP TABLE IF EXISTS Sessions;
 
+DROP TABLE IF EXISTS CommitteeSessions;
+
 DROP TABLE IF EXISTS SpeakerLists;
 
 DROP TABLE IF EXISTS Files;
@@ -76,8 +78,10 @@ CREATE TABLE
         venue VARCHAR(255),
         description TEXT,
         status ENUM ('preparation', 'in_session', 'paused', 'closed') DEFAULT 'preparation',
+        capacity INT DEFAULT 40,
         agenda_order JSON, -- Store agenda order or version info
         dais_json JSON, -- Structured info for dais members
+        time_config JSON,
         created_by INT,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
@@ -134,6 +138,19 @@ CREATE TABLE
         FOREIGN KEY (committee_id) REFERENCES Committees (id),
         FOREIGN KEY (proposer_id) REFERENCES Delegates (id),
         FOREIGN KEY (speaker_list_id) REFERENCES SpeakerLists (id)
+    );
+
+CREATE TABLE
+    CommitteeSessions (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        committee_id INT NOT NULL,
+        topic VARCHAR(255) NOT NULL,
+        chair VARCHAR(255),
+        start_time DATETIME,
+        duration_minutes INT DEFAULT 20,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        FOREIGN KEY (committee_id) REFERENCES Committees (id)
     );
 
 CREATE TABLE
@@ -284,6 +301,8 @@ CREATE INDEX idx_committees_code ON Committees (code);
 CREATE INDEX idx_delegates_committee ON Delegates (committee_id);
 
 CREATE INDEX idx_sessions_committee ON Sessions (committee_id);
+
+CREATE INDEX idx_committee_sessions_committee ON CommitteeSessions (committee_id);
 
 CREATE INDEX idx_speaker_lists_committee ON SpeakerLists (committee_id);
 

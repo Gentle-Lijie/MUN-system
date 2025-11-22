@@ -11,112 +11,122 @@ const statusOptions: { value: CommitteeStatus; label: string; badge: string }[] 
 ]
 
 type CommitteeSession = {
-  id: string
+  id: number
   topic: string
-  chair: string
-  start: string
+  chair: string | null
+  start: string | null
   durationMinutes: number
 }
 
 type DaisMember = {
-  id: string
+  id: number
   name: string
   role: string
   contact?: string
 }
 
+type User = {
+  id: number
+  name: string
+  email: string
+  phone?: string
+}
+
 type TimeConfig = {
-  start: string
-  end: string
+  realTimeAnchor: string | null
   flowSpeed: number
 }
 
 type CommitteeRecord = {
-  id: string
+  id: number
   code: string
   name: string
-  venue: string
-  status: CommitteeStatus
+  venue: string | null
+  status: string
   capacity: number
-  agenda: CommitteeSession[]
+  description: string | null
+  sessions: CommitteeSession[]
   dais: DaisMember[]
   timeConfig: TimeConfig
 }
 
-const generateId = () => crypto.randomUUID?.() ?? Math.random().toString(36).slice(2, 9)
+const committees = ref<CommitteeRecord[]>([])
+const users = ref<User[]>([])
 
-const committees = ref<CommitteeRecord[]>([
-  {
-    id: 'committee-sc',
-    code: 'SC',
-    name: '联合国安理会',
-    venue: '会议中心 A1',
-    status: 'in_session',
-    capacity: 45,
-    agenda: [
-      { id: 'sc-s1', topic: '危机通报', chair: 'Alice', start: '2025-05-18T09:00', durationMinutes: 60 },
-      { id: 'sc-s2', topic: '主要辩论', chair: 'Bob', start: '2025-05-18T10:15', durationMinutes: 90 },
-    ],
-    dais: [
-      { id: 'alice', name: 'Alice', role: '主席', contact: '+86 138****0001' },
-      { id: 'bob', name: 'Bob', role: '副主席', contact: '+1 202***1111' },
-    ],
-    timeConfig: {
-      start: '2025-05-18T08:45',
-      end: '2025-05-18T18:00',
-      flowSpeed: 2,
-    },
-  },
-  {
-    id: 'committee-hrc',
-    code: 'HRC',
-    name: '人权理事会',
-    venue: '会议中心 B3',
-    status: 'preparation',
-    capacity: 60,
-    agenda: [{ id: 'hrc-s1', topic: '国家陈述', chair: 'Carol', start: '2025-05-19T13:30', durationMinutes: 75 }],
-    dais: [
-      { id: 'carol', name: 'Carol', role: '主席', contact: '+44 20****3333' },
-    ],
-    timeConfig: {
-      start: '2025-05-19T09:30',
-      end: '2025-05-19T19:00',
-      flowSpeed: 1,
-    },
-  },
-  {
-    id: 'committee-crisis',
-    code: 'Crisis',
-    name: '危机特别会议',
-    venue: '作战室 C2',
-    status: 'paused',
-    capacity: 30,
-    agenda: [],
-    dais: [
-      { id: 'dawn', name: 'Dawn', role: '危机导演', contact: 'dawn@mun.local' },
-    ],
-    timeConfig: {
-      start: '2025-05-18T00:00',
-      end: '2025-05-20T23:59',
-      flowSpeed: 4,
-    },
-  },
-])
+const fetchVenues = async () => {
+  try {
+    const response = await fetch('/api/venues', {
+      credentials: 'include'
+    })
+    if (!response.ok) throw new Error('Failed to fetch venues')
+    const data = await response.json()
+    committees.value = data.items || []
+  } catch (error) {
+    console.error('Error fetching venues:', error)
+  }
+}
+
+const fetchUsers = async () => {
+  try {
+    const response = await fetch('/api/users', {
+      credentials: 'include'
+    })
+    if (!response.ok) throw new Error('Failed to fetch users')
+    const data = await response.json()
+    users.value = data.items || []
+  } catch (error) {
+    console.error('Error fetching users:', error)
+  }
+}
+
+const updateVenue = async (venueId: number, updates: Partial<CommitteeRecord>) => {
+  try {
+    const response = await fetch(`/api/venues/${venueId}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify(updates)
+    })
+    if (!response.ok) throw new Error('Failed to update venue')
+    const updated = await response.json()
+    const index = committees.value.findIndex(c => c.id === venueId)
+    if (index !== -1) committees.value[index] = updated
+  } catch (error) {
+    console.error('Error updating venue:', error)
+  }
+}
+
+const addSession = async (venueId: number, session: Omit<CommitteeSession, 'id'>) => {
+  try {
+    const response = await fetch(`/api/venues/${venueId}/sessions`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify(session)
+    })
+    if (!response.ok) throw new Error('Failed to add session')
+    const newSession = await response.json()
+    const committee = committees.value.find(c => c.id === venueId)
+    if (committee) committee.sessions.push(newSession)
+  } catch (error) {
+    console.error('Error adding session:', error)
+  }
+}
 
 const filters = reactive({
   keyword: '',
   status: 'all' as 'all' | CommitteeStatus,
 })
 
-const selectedId = ref(committees.value[0]?.id ?? '')
+const selectedId = ref<number | null>(null)
 
 const filteredCommittees = computed(() => {
   return committees.value.filter((committee) => {
     const keyword = filters.keyword.trim().toLowerCase()
     const keywordOk = keyword
-      ? [committee.code, committee.name, committee.venue]
-          .concat(committee.dais.map((d) => d.name))
-          .some((field) => field.toLowerCase().includes(keyword))
+      ? [committee.code, committee.name, committee.venue || '']
+        .concat(committee.dais ? committee.dais.map((d) => d.name || '') : [])
+        .some((field) => field && field.toLowerCase().includes(keyword))
       : true
     const statusOk = filters.status === 'all' || committee.status === filters.status
     return keywordOk && statusOk
@@ -132,15 +142,36 @@ const sessionForm = reactive({
   durationMinutes: 20,
 })
 
-const daisForm = reactive({
-  name: '',
-  role: '',
-  contact: '',
-})
+const showDaisModal = ref(false)
+const daisSearch = ref('')
+const selectedUserIds = ref<number[]>([])
+
+const filteredUsers = computed(() =>
+  users.value.filter(u =>
+    u.name.toLowerCase().includes(daisSearch.value.toLowerCase()) ||
+    u.email.toLowerCase().includes(daisSearch.value.toLowerCase())
+  )
+)
+
+const confirmDaisSelection = () => {
+  if (!selectedCommittee.value) return
+  for (const id of selectedUserIds.value) {
+    const user = users.value.find(u => u.id === id)
+    if (user && !selectedCommittee.value.dais.some(d => d.id === id)) {
+      selectedCommittee.value.dais.push({
+        id,
+        name: user.name,
+        role: '主席团',
+        contact: user.phone || ''
+      })
+    }
+  }
+  selectedUserIds.value = []
+  showDaisModal.value = false
+}
 
 const timeForm = reactive({
-  start: '',
-  end: '',
+  realTimeAnchor: '',
   flowSpeed: 1,
 })
 
@@ -148,15 +179,14 @@ watch(
   () => selectedCommittee.value,
   (next) => {
     if (next) {
-      timeForm.start = next.timeConfig.start
-      timeForm.end = next.timeConfig.end
+      timeForm.realTimeAnchor = next.timeConfig.realTimeAnchor || ''
       timeForm.flowSpeed = next.timeConfig.flowSpeed
     }
   },
   { immediate: true },
 )
 
-const selectCommittee = (committeeId: string) => {
+const selectCommittee = (committeeId: number) => {
   selectedId.value = committeeId
 }
 
@@ -165,14 +195,13 @@ const handleSaveBaseInfo = () => {
   window.alert(`已保存 ${selectedCommittee.value.name} 的基础信息（模拟）`)
 }
 
-const handleAddSession = () => {
-  if (!selectedCommittee.value || !sessionForm.topic || !sessionForm.start) return
-  selectedCommittee.value.agenda.push({
-    id: generateId(),
+const handleAddSession = async () => {
+  if (!selectedCommittee.value || !sessionForm.topic) return
+  await addSession(selectedCommittee.value.id, {
     topic: sessionForm.topic,
-    chair: sessionForm.chair || '未指定',
-    start: sessionForm.start,
-    durationMinutes: sessionForm.durationMinutes || 20,
+    chair: sessionForm.chair || null,
+    start: sessionForm.start || null,
+    durationMinutes: sessionForm.durationMinutes,
   })
   sessionForm.topic = ''
   sessionForm.chair = ''
@@ -180,37 +209,19 @@ const handleAddSession = () => {
   sessionForm.durationMinutes = 20
 }
 
-const handleRemoveSession = (sessionId: string) => {
+const handleRemoveSession = (sessionId: number) => {
   if (!selectedCommittee.value) return
-  selectedCommittee.value.agenda = selectedCommittee.value.agenda.filter((session) => session.id !== sessionId)
+  selectedCommittee.value.sessions = selectedCommittee.value.sessions.filter((session) => session.id !== sessionId)
 }
 
-const handleAddDaisMember = () => {
-  if (!selectedCommittee.value || !daisForm.name || !daisForm.role) return
-  selectedCommittee.value.dais.push({
-    id: generateId(),
-    name: daisForm.name,
-    role: daisForm.role,
-    contact: daisForm.contact,
-  })
-  daisForm.name = ''
-  daisForm.role = ''
-  daisForm.contact = ''
-}
-
-const handleRemoveDaisMember = (memberId: string) => {
+const handleRemoveDaisMember = (memberId: number) => {
   if (!selectedCommittee.value) return
   selectedCommittee.value.dais = selectedCommittee.value.dais.filter((member) => member.id !== memberId)
 }
 
-const handleSaveTimeConfig = () => {
+const handleSaveTimeConfig = async () => {
   if (!selectedCommittee.value) return
-  selectedCommittee.value.timeConfig = {
-    start: timeForm.start,
-    end: timeForm.end,
-    flowSpeed: timeForm.flowSpeed,
-  }
-  window.alert('时间轴配置已保存（示例）')
+  await updateVenue(selectedCommittee.value.id, { timeConfig: { realTimeAnchor: timeForm.realTimeAnchor || null, flowSpeed: timeForm.flowSpeed } })
 }
 
 const handleDisplayBoard = (committee: CommitteeRecord, mode: 'preview' | 'sync') => {
@@ -222,58 +233,16 @@ const handleDisplayBoard = (committee: CommitteeRecord, mode: 'preview' | 'sync'
   window.alert(`已向显示大屏推送 ${committee.name} 的最新状态（示例操作）`)
 }
 
-const createModalOpen = ref(false)
-const createForm = reactive({
-  code: '',
-  name: '',
-  venue: '',
-  capacity: 40,
-  status: 'preparation' as CommitteeStatus,
-  start: '',
-  end: '',
-  flowSpeed: 1,
-})
-
-const resetCreateForm = () => {
-  createForm.code = ''
-  createForm.name = ''
-  createForm.venue = ''
-  createForm.capacity = 40
-  createForm.status = 'preparation'
-  createForm.start = ''
-  createForm.end = ''
-  createForm.flowSpeed = 1
-}
-
-const handleCreateCommittee = () => {
-  if (!createForm.code || !createForm.name || !createForm.venue) return
-  const newRecord: CommitteeRecord = {
-    id: `committee-${createForm.code.toLowerCase()}`,
-    code: createForm.code,
-    name: createForm.name,
-    venue: createForm.venue,
-    capacity: createForm.capacity,
-    status: createForm.status,
-    agenda: [],
-    dais: [],
-    timeConfig: {
-      start: createForm.start || new Date().toISOString().slice(0, 16),
-      end: createForm.end || new Date().toISOString().slice(0, 16),
-      flowSpeed: createForm.flowSpeed,
-    },
-  }
-  committees.value.unshift(newRecord)
-  selectedId.value = newRecord.id
-  createModalOpen.value = false
-  resetCreateForm()
-}
-
 const committeeStats = computed(() => ({
   total: committees.value.length,
   running: committees.value.filter((c) => c.status === 'in_session').length,
   paused: committees.value.filter((c) => c.status === 'paused').length,
   closed: committees.value.filter((c) => c.status === 'closed').length,
 }))
+
+// Load data on mount
+fetchVenues()
+fetchUsers()
 </script>
 
 <template>
@@ -283,10 +252,10 @@ const committeeStats = computed(() => ({
         <h2 class="text-2xl font-bold">会场管理</h2>
         <p class="text-sm text-base-content/70">配置会场信息、议程、主席团，以及时间轴/大屏同步。</p>
       </div>
-      <button class="btn btn-primary" @click="createModalOpen = true">新增会场</button>
+      <button class="btn btn-outline">导出配置</button>
     </header>
 
-    <section class="grid gap-6 xl:grid-cols-[1.6fr,1fr]">
+    <section class="grid gap-6 xl:grid-cols-[0.6fr,1fr]">
       <div class="space-y-4">
         <div class="flex flex-wrap gap-3">
           <label class="input input-bordered flex items-center gap-2 grow min-w-[14rem]">
@@ -323,14 +292,10 @@ const committeeStats = computed(() => ({
           </div>
         </div>
 
-        <div class="grid gap-4 md:grid-cols-2">
-          <article
-            v-for="committee in filteredCommittees"
-            :key="committee.id"
+        <div class="grid gap-4 md:grid-cols-1">
+          <article v-for="committee in filteredCommittees" :key="committee.id"
             class="border border-base-200 rounded-2xl p-4 space-y-3 hover:border-primary cursor-pointer"
-            :class="{ 'border-primary shadow-lg': committee.id === selectedId }"
-            @click="selectCommittee(committee.id)"
-          >
+            :class="{ 'border-primary shadow-lg': committee.id === selectedId }" @click="selectCommittee(committee.id)">
             <div class="flex items-start justify-between gap-3">
               <div>
                 <p class="text-xs text-base-content/60">{{ committee.code }}</p>
@@ -338,12 +303,12 @@ const committeeStats = computed(() => ({
                 <p class="text-sm text-base-content/70">{{ committee.venue }}</p>
               </div>
               <span class="badge" :class="statusOptions.find((s) => s.value === committee.status)?.badge">
-                {{ statusOptions.find((s) => s.value === committee.status)?.label }}
+                {{statusOptions.find((s) => s.value === committee.status)?.label}}
               </span>
             </div>
             <div class="flex flex-wrap gap-4 text-sm text-base-content/70">
               <span>容量 {{ committee.capacity }} 人</span>
-              <span>议程 {{ committee.agenda.length }} 条</span>
+              <span>议程 {{ committee.sessions.length }} 条</span>
               <span>主席团 {{ committee.dais.length }} 人</span>
             </div>
             <div class="flex flex-wrap gap-2">
@@ -387,7 +352,7 @@ const committeeStats = computed(() => ({
 
         <section class="border border-base-200 rounded-2xl p-4 space-y-4">
           <div class="flex items-center justify-between">
-            <h3 class="font-semibold">议程 · {{ selectedCommittee.agenda.length }} 条</h3>
+            <h3 class="font-semibold">议程 · {{ selectedCommittee.sessions.length }} 条</h3>
           </div>
           <div class="overflow-x-auto rounded-xl border border-base-200">
             <table class="table table-sm">
@@ -401,14 +366,14 @@ const committeeStats = computed(() => ({
                 </tr>
               </thead>
               <tbody>
-                <tr v-for="session in selectedCommittee.agenda" :key="session.id">
-                  <td>{{ new Date(session.start).toLocaleString() }}</td>
+                <tr v-for="session in selectedCommittee.sessions" :key="session.id">
+                  <td>{{ session.start ? new Date(session.start).toLocaleString() : '未设置' }}</td>
                   <td class="font-semibold">{{ session.topic }}</td>
                   <td>{{ session.chair }}</td>
                   <td>{{ session.durationMinutes }} 分钟</td>
                   <td><button class="btn btn-ghost btn-xs" @click="handleRemoveSession(session.id)">移除</button></td>
                 </tr>
-                <tr v-if="selectedCommittee.agenda.length === 0">
+                <tr v-if="selectedCommittee.sessions.length === 0">
                   <td colspan="5" class="text-center text-base-content/60">尚未设置议程</td>
                 </tr>
               </tbody>
@@ -438,41 +403,40 @@ const committeeStats = computed(() => ({
             </div>
             <p v-if="selectedCommittee.dais.length === 0" class="text-sm text-base-content/60">暂无主席团成员</p>
           </div>
-          <form class="grid md:grid-cols-3 gap-3" @submit.prevent="handleAddDaisMember">
-            <input v-model="daisForm.name" type="text" placeholder="姓名" class="input input-bordered" />
-            <input v-model="daisForm.role" type="text" placeholder="角色" class="input input-bordered" />
-            <input v-model="daisForm.contact" type="text" placeholder="联系方式" class="input input-bordered" />
-            <button type="submit" class="btn btn-outline md:col-span-3">添加主席团成员</button>
-          </form>
+          <button @click="showDaisModal = true" class="btn btn-outline">添加主席团成员</button>
         </section>
 
         <section class="border border-base-200 rounded-2xl p-4 space-y-3">
           <div class="flex items-center justify-between">
-            <h3 class="font-semibold">时间轴 & 时间流速</h3>
+            <h3 class="font-semibold">时间轴控制</h3>
             <button class="btn btn-sm btn-primary" @click="handleSaveTimeConfig">保存</button>
           </div>
-          <div class="grid gap-3 md:grid-cols-2">
+          <div class="space-y-3">
             <label class="form-control">
-              <span class="label-text">现实时间开始</span>
-              <input v-model="timeForm.start" type="datetime-local" class="input input-bordered" />
+              <span class="label-text">现实时间锚点</span>
+              <div class="flex gap-2">
+                <input v-model="timeForm.realTimeAnchor" type="datetime-local" class="input input-bordered flex-1" />
+                <button type="button" class="btn btn-outline"
+                  @click="timeForm.realTimeAnchor = new Date().toISOString().slice(0, 16)">设为现在</button>
+              </div>
             </label>
             <label class="form-control">
-              <span class="label-text">现实时间结束</span>
-              <input v-model="timeForm.end" type="datetime-local" class="input input-bordered" />
+              <span class="label-text">时间流速</span>
+              <div class="flex gap-2 items-center">
+                <div class="join">
+                  <button type="button" class="btn join-item" :class="{ 'btn-active': timeForm.flowSpeed === 3 }"
+                    @click="timeForm.flowSpeed = 3">3x</button>
+                  <button type="button" class="btn join-item" :class="{ 'btn-active': timeForm.flowSpeed === 60 }"
+                    @click="timeForm.flowSpeed = 60">60x</button>
+                  <button type="button" class="btn join-item" :class="{ 'btn-active': timeForm.flowSpeed === 180 }"
+                    @click="timeForm.flowSpeed = 180">180x</button>
+                </div>
+                <span class="text-sm">或自定义:</span>
+                <input v-model.number="timeForm.flowSpeed" type="number" min="0.1" step="0.1"
+                  class="input input-bordered w-20" />
+              </div>
             </label>
           </div>
-          <label class="form-control">
-            <span class="label-text">时间流速 x{{ timeForm.flowSpeed }}</span>
-            <input v-model.number="timeForm.flowSpeed" type="range" min="1" max="6" class="range range-primary" />
-            <div class="flex justify-between text-xs text-base-content/60 mt-1">
-              <span>1x</span>
-              <span>2x</span>
-              <span>3x</span>
-              <span>4x</span>
-              <span>5x</span>
-              <span>6x</span>
-            </div>
-          </label>
         </section>
       </div>
 
@@ -482,56 +446,20 @@ const committeeStats = computed(() => ({
     </section>
   </div>
 
-  <div class="modal" :class="{ 'modal-open': createModalOpen }">
+  <dialog :open="showDaisModal" class="modal">
     <div class="modal-box max-w-2xl">
-      <h3 class="font-bold text-lg mb-4">新增会场</h3>
-      <form class="space-y-4" @submit.prevent="handleCreateCommittee">
-        <div class="grid gap-3 md:grid-cols-2">
-          <label class="form-control">
-            <span class="label-text">会场代号</span>
-            <input v-model="createForm.code" type="text" class="input input-bordered" placeholder="例如 HRC" />
-          </label>
-          <label class="form-control">
-            <span class="label-text">会场名称</span>
-            <input v-model="createForm.name" type="text" class="input input-bordered" />
-          </label>
-          <label class="form-control">
-            <span class="label-text">举办地点</span>
-            <input v-model="createForm.venue" type="text" class="input input-bordered" />
-          </label>
-          <label class="form-control">
-            <span class="label-text">容纳人数</span>
-            <input v-model.number="createForm.capacity" type="number" min="10" class="input input-bordered" />
-          </label>
-          <label class="form-control">
-            <span class="label-text">默认状态</span>
-            <select v-model="createForm.status" class="select select-bordered">
-              <option v-for="item in statusOptions" :key="item.value" :value="item.value">{{ item.label }}</option>
-            </select>
-          </label>
-          <label class="form-control">
-            <span class="label-text">时间流速</span>
-            <input v-model.number="createForm.flowSpeed" type="number" min="1" max="6" class="input input-bordered" />
-          </label>
-        </div>
-        <div class="grid gap-3 md:grid-cols-2">
-          <label class="form-control">
-            <span class="label-text">开始时间</span>
-            <input v-model="createForm.start" type="datetime-local" class="input input-bordered" />
-          </label>
-          <label class="form-control">
-            <span class="label-text">结束时间</span>
-            <input v-model="createForm.end" type="datetime-local" class="input input-bordered" />
-          </label>
-        </div>
-        <div class="modal-action">
-          <button type="button" class="btn" @click="createModalOpen = false; resetCreateForm()">取消</button>
-          <button type="submit" class="btn btn-primary">创建</button>
-        </div>
-      </form>
+      <h3 class="font-bold text-lg mb-4">选择主席团成员</h3>
+      <input v-model="daisSearch" type="text" placeholder="搜索用户" class="input input-bordered w-full mb-4" />
+      <div class="max-h-60 overflow-y-auto space-y-2">
+        <label v-for="user in filteredUsers" :key="user.id" class="flex items-center gap-2 p-2 border rounded">
+          <input type="checkbox" v-model="selectedUserIds" :value="user.id" class="checkbox" />
+          <span>{{ user.name }} ({{ user.email }})</span>
+        </label>
+      </div>
+      <div class="modal-action">
+        <button @click="showDaisModal = false; selectedUserIds = []" class="btn">取消</button>
+        <button @click="confirmDaisSelection" class="btn btn-primary">确定</button>
+      </div>
     </div>
-    <form method="dialog" class="modal-backdrop">
-      <button @click="createModalOpen = false; resetCreateForm()">关闭</button>
-    </form>
-  </div>
+  </dialog>
 </template>

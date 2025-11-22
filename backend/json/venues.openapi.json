@@ -1,0 +1,380 @@
+{
+    "openapi": "3.0.3",
+    "info": {
+        "title": "MUN Venue Management API",
+        "version": "1.0.0",
+        "description": "Endpoints for committees/venues, agenda sessions and related metadata."
+    },
+    "paths": {
+        "/api/venues": {
+            "get": {
+                "summary": "List venues",
+                "description": "Returns every committee/venue along with dais configuration and agenda sessions. Requires presidium privileges (admin/dais/presidium:manage).",
+                "operationId": "listVenues",
+                "x-apifox-folder": "venues",
+                "responses": {
+                    "200": {
+                        "description": "Venue collection",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/VenueCollection"
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Missing permissions",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/venues/{venueId}": {
+            "parameters": [
+                {
+                    "name": "venueId",
+                    "in": "path",
+                    "required": true,
+                    "schema": {
+                        "type": "integer",
+                        "minimum": 1
+                    }
+                }
+            ],
+            "post": {
+                "summary": "Update venue",
+                "operationId": "updateVenue",
+                "x-apifox-folder": "venues",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/UpdateVenueRequest"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Updated venue",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Venue"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Validation error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Missing permissions"
+                    },
+                    "404": {
+                        "description": "Venue not found",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/venues/{venueId}/sessions": {
+            "parameters": [
+                {
+                    "name": "venueId",
+                    "in": "path",
+                    "required": true,
+                    "schema": {
+                        "type": "integer",
+                        "minimum": 1
+                    }
+                }
+            ],
+            "post": {
+                "summary": "Create agenda session",
+                "operationId": "createVenueSession",
+                "x-apifox-folder": "venues",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/CreateVenueSessionRequest"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Created session",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/VenueSession"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Validation error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Missing permissions"
+                    },
+                    "404": {
+                        "description": "Venue not found"
+                    }
+                }
+            }
+        }
+    },
+    "components": {
+        "schemas": {
+            "CommitteeStatus": {
+                "type": "string",
+                "enum": [
+                    "preparation",
+                    "in_session",
+                    "paused",
+                    "closed"
+                ]
+            },
+            "DaisMember": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "string"
+                    },
+                    "name": {
+                        "type": "string"
+                    },
+                    "role": {
+                        "type": "string"
+                    },
+                    "contact": {
+                        "type": "string",
+                        "nullable": true
+                    }
+                }
+            },
+            "TimeConfig": {
+                "type": "object",
+                "properties": {
+                    "realTimeAnchor": {
+                        "type": "string",
+                        "format": "date-time",
+                        "nullable": true
+                    },
+                    "flowSpeed": {
+                        "type": "number",
+                        "default": 1
+                    }
+                }
+            },
+            "VenueSession": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "string"
+                    },
+                    "topic": {
+                        "type": "string"
+                    },
+                    "chair": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "start": {
+                        "type": "string",
+                        "format": "date-time",
+                        "nullable": true
+                    },
+                    "durationMinutes": {
+                        "type": "integer",
+                        "minimum": 1
+                    }
+                },
+                "required": [
+                    "id",
+                    "topic",
+                    "durationMinutes"
+                ]
+            },
+            "Venue": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "integer"
+                    },
+                    "code": {
+                        "type": "string"
+                    },
+                    "name": {
+                        "type": "string"
+                    },
+                    "venue": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "status": {
+                        "$ref": "#/components/schemas/CommitteeStatus"
+                    },
+                    "capacity": {
+                        "type": "integer"
+                    },
+                    "description": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "dais": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/DaisMember"
+                        }
+                    },
+                    "sessions": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/VenueSession"
+                        }
+                    },
+                    "timeConfig": {
+                        "$ref": "#/components/schemas/TimeConfig"
+                    },
+                    "createdAt": {
+                        "type": "string",
+                        "format": "date-time",
+                        "nullable": true
+                    },
+                    "updatedAt": {
+                        "type": "string",
+                        "format": "date-time",
+                        "nullable": true
+                    }
+                },
+                "required": [
+                    "id",
+                    "code",
+                    "name",
+                    "status",
+                    "capacity",
+                    "sessions"
+                ]
+            },
+            "VenueCollection": {
+                "type": "object",
+                "properties": {
+                    "items": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/Venue"
+                        }
+                    },
+                    "total": {
+                        "type": "integer"
+                    }
+                },
+                "required": [
+                    "items",
+                    "total"
+                ]
+            },
+            "UpdateVenueRequest": {
+                "type": "object",
+                "properties": {
+                    "name": {
+                        "type": "string"
+                    },
+                    "code": {
+                        "type": "string"
+                    },
+                    "venue": {
+                        "type": "string"
+                    },
+                    "location": {
+                        "type": "string",
+                        "description": "Alias of venue"
+                    },
+                    "description": {
+                        "type": "string"
+                    },
+                    "status": {
+                        "$ref": "#/components/schemas/CommitteeStatus"
+                    },
+                    "capacity": {
+                        "type": "integer",
+                        "minimum": 1
+                    },
+                    "dais": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/DaisMember"
+                        }
+                    },
+                    "timeConfig": {
+                        "$ref": "#/components/schemas/TimeConfig"
+                    }
+                }
+            },
+            "CreateVenueSessionRequest": {
+                "type": "object",
+                "required": [
+                    "topic"
+                ],
+                "properties": {
+                    "topic": {
+                        "type": "string"
+                    },
+                    "chair": {
+                        "type": "string"
+                    },
+                    "start": {
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "durationMinutes": {
+                        "type": "integer",
+                        "minimum": 1,
+                        "default": 30
+                    }
+                }
+            },
+            "ErrorResponse": {
+                "type": "object",
+                "properties": {
+                    "message": {
+                        "type": "string"
+                    }
+                }
+            }
+        }
+    }
+}

@@ -14,7 +14,7 @@ ROLE_CHOICES = ('admin', 'dais', 'delegate', 'observer')
 
 
 class User(db.Model):
-    __tablename__ = 'users'
+    __tablename__ = 'Users'
     DEFAULT_PASSWORD = '123456'
 
     id = db.Column(db.Integer, primary_key=True)
@@ -34,7 +34,7 @@ class User(db.Model):
         onupdate=datetime.utcnow,
     )
     session_token = db.Column(db.String(255), unique=True)
-    permissions_json = db.Column(db.Text, default='[]')
+    permissions = db.Column('permissions', db.Text, default='[]')
 
     ROLE_PERMISSIONS: dict[str, list[str]] = {
         'admin': [
@@ -85,24 +85,23 @@ class User(db.Model):
             'lastLogin': self.last_login.isoformat() if self.last_login else None,
             'createdAt': self.created_at.isoformat() if self.created_at else None,
             'updatedAt': self.updated_at.isoformat() if self.updated_at else None,
-            'permissions': self.permissions,
+            'permissions': self.effective_permissions,
         }
 
     @property
-    def permissions(self) -> list[str]:
+    def effective_permissions(self) -> list[str]:
         import json
-        custom_perms = self.permissions_json
-        if custom_perms:
+        if self.permissions and self.permissions != '[]':
             try:
-                return json.loads(custom_perms)
+                return json.loads(self.permissions)
             except json.JSONDecodeError:
-                return []
+                pass
         return self.ROLE_PERMISSIONS.get(self.role, [])
 
-    @permissions.setter
-    def permissions(self, value: list[str] | str) -> None:
+    @effective_permissions.setter
+    def effective_permissions(self, value: list[str] | str) -> None:
         import json
         if isinstance(value, list):
-            self.permissions_json = json.dumps(value)
+            self.permissions = json.dumps(value)
         else:
-            self.permissions_json = value
+            self.permissions = value

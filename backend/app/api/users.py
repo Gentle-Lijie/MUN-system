@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import csv
 import io
+import json
 from datetime import datetime
 
 from flask import Response, make_response, request
@@ -87,14 +88,14 @@ class UserListResource(Resource):
         user.set_password(User.DEFAULT_PASSWORD)
         # Set default permissions
         if role == 'observer':
-            user.permissions = ['observer:read']
+            user.permissions = json.dumps(['observer:read'])
         elif role == 'delegate':
-            user.permissions = User.ROLE_PERMISSIONS['delegate']
+            user.permissions = json.dumps(User.ROLE_PERMISSIONS['delegate'])
         else:  # admin and dais
             all_perms = set()
             for perms in User.ROLE_PERMISSIONS.values():
                 all_perms.update(perms)
-            user.permissions = list(all_perms)
+            user.permissions = json.dumps(list(all_perms))
         db.session.add(user)
         db.session.commit()
         return user.to_dict(), 201
@@ -206,6 +207,17 @@ class UserImportResource(Resource):
                     phone=phone,
                 )
                 new_user.set_password(User.DEFAULT_PASSWORD)
+                # Set default permissions for new users
+                if role == 'observer':
+                    new_user.permissions = json.dumps(['observer:read'])
+                elif role == 'delegate':
+                    new_user.permissions = json.dumps(
+                        User.ROLE_PERMISSIONS['delegate'])
+                else:  # admin and dais
+                    all_perms = set()
+                    for perms in User.ROLE_PERMISSIONS.values():
+                        all_perms.update(perms)
+                    new_user.permissions = json.dumps(list(all_perms))
                 db.session.add(new_user)
                 created += 1
 
@@ -257,7 +269,7 @@ class UserPermissionsResource(Resource):
         if not all(isinstance(p, str) for p in permissions):
             abort(400, message='permissions must be strings')
         try:
-            user.permissions = permissions
+            user.permissions = json.dumps(permissions)
             print(f"Setting permissions for user {user_id}: {permissions}")
             print(f"User permissions after set: {user.permissions}")
             db.session.flush()
@@ -267,4 +279,4 @@ class UserPermissionsResource(Resource):
         except Exception as e:
             print(f"Error saving permissions: {e}")
             abort(500, message='Failed to save permissions')
-        return {'permissions': user.permissions}, 200
+        return {'permissions': permissions}, 200
