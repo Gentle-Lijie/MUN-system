@@ -1,0 +1,441 @@
+{
+    "openapi": "3.0.3",
+    "info": {
+        "title": "MUN System Crisis API",
+        "version": "1.0.0",
+        "description": "Endpoints for publishing crises and collecting delegate responses"
+    },
+    "paths": {
+        "/api/crises": {
+            "get": {
+                "summary": "List crises visible to the current user",
+                "parameters": [
+                    {
+                        "name": "status",
+                        "in": "query",
+                        "description": "Optional status filter (comma separated)",
+                        "schema": {
+                            "type": "string",
+                            "example": "active,resolved"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Crisis collection",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "items": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/components/schemas/Crisis"
+                                            }
+                                        },
+                                        "total": {
+                                            "type": "integer"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            },
+            "post": {
+                "summary": "Publish a new crisis (presidium only)",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "required": [
+                                    "title",
+                                    "content"
+                                ],
+                                "properties": {
+                                    "title": {
+                                        "type": "string",
+                                        "maxLength": 255
+                                    },
+                                    "content": {
+                                        "type": "string"
+                                    },
+                                    "file_path": {
+                                        "type": "string",
+                                        "maxLength": 500,
+                                        "nullable": true
+                                    },
+                                    "responses_allowed": {
+                                        "type": "boolean",
+                                        "default": false
+                                    },
+                                    "status": {
+                                        "$ref": "#/components/schemas/CrisisStatus"
+                                    },
+                                    "target_committees": {
+                                        "type": "array",
+                                        "items": {
+                                            "type": "integer"
+                                        },
+                                        "nullable": true,
+                                        "description": "Committee IDs, null => all"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Crisis created",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Crisis"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/api/crises/{crisisId}": {
+            "patch": {
+                "summary": "Update crisis content or state",
+                "parameters": [
+                    {
+                        "name": "crisisId",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "title": {
+                                        "type": "string",
+                                        "maxLength": 255
+                                    },
+                                    "content": {
+                                        "type": "string"
+                                    },
+                                    "file_path": {
+                                        "type": "string",
+                                        "maxLength": 500,
+                                        "nullable": true
+                                    },
+                                    "responses_allowed": {
+                                        "type": "boolean"
+                                    },
+                                    "status": {
+                                        "$ref": "#/components/schemas/CrisisStatus"
+                                    },
+                                    "target_committees": {
+                                        "type": "array",
+                                        "items": {
+                                            "type": "integer"
+                                        },
+                                        "nullable": true
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Updated crisis",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Crisis"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/api/crises/{crisisId}/responses": {
+            "get": {
+                "summary": "List delegate responses for a crisis (presidium)",
+                "parameters": [
+                    {
+                        "name": "crisisId",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Response list",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "crisis": {
+                                            "$ref": "#/components/schemas/Crisis"
+                                        },
+                                        "items": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/components/schemas/CrisisResponse"
+                                            }
+                                        },
+                                        "total": {
+                                            "type": "integer"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            },
+            "post": {
+                "summary": "Submit or update a delegate response",
+                "parameters": [
+                    {
+                        "name": "crisisId",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "required": [
+                                    "summary"
+                                ],
+                                "properties": {
+                                    "summary": {
+                                        "type": "string",
+                                        "description": "Situation assessment"
+                                    },
+                                    "actions": {
+                                        "type": "string",
+                                        "nullable": true
+                                    },
+                                    "resources": {
+                                        "type": "string",
+                                        "nullable": true
+                                    },
+                                    "file_path": {
+                                        "type": "string",
+                                        "nullable": true,
+                                        "maxLength": 500
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Response saved",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/CrisisResponse"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        }
+    },
+    "components": {
+        "schemas": {
+            "CrisisStatus": {
+                "type": "string",
+                "enum": [
+                    "draft",
+                    "active",
+                    "resolved",
+                    "archived"
+                ],
+                "default": "active"
+            },
+            "UserSummary": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "integer"
+                    },
+                    "name": {
+                        "type": "string"
+                    }
+                }
+            },
+            "Crisis": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "integer"
+                    },
+                    "title": {
+                        "type": "string"
+                    },
+                    "content": {
+                        "type": "string"
+                    },
+                    "filePath": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "status": {
+                        "$ref": "#/components/schemas/CrisisStatus"
+                    },
+                    "responsesAllowed": {
+                        "type": "boolean"
+                    },
+                    "targetCommittees": {
+                        "type": "array",
+                        "items": {
+                            "type": "integer"
+                        },
+                        "nullable": true
+                    },
+                    "publishedAt": {
+                        "type": "string",
+                        "format": "date-time",
+                        "nullable": true
+                    },
+                    "publishedBy": {
+                        "$ref": "#/components/schemas/UserSummary",
+                        "nullable": true
+                    },
+                    "responsesCount": {
+                        "type": "integer"
+                    },
+                    "canRespond": {
+                        "type": "boolean"
+                    },
+                    "myResponse": {
+                        "$ref": "#/components/schemas/CrisisResponse",
+                        "nullable": true
+                    }
+                }
+            },
+            "CrisisResponse": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "integer"
+                    },
+                    "crisisId": {
+                        "type": "integer"
+                    },
+                    "user": {
+                        "$ref": "#/components/schemas/UserSummary",
+                        "nullable": true
+                    },
+                    "committee": {
+                        "type": "object",
+                        "nullable": true,
+                        "properties": {
+                            "id": {
+                                "type": "integer"
+                            },
+                            "name": {
+                                "type": "string"
+                            },
+                            "code": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "country": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "content": {
+                        "type": "object",
+                        "properties": {
+                            "summary": {
+                                "type": "string",
+                                "nullable": true
+                            },
+                            "actions": {
+                                "type": "string",
+                                "nullable": true
+                            },
+                            "resources": {
+                                "type": "string",
+                                "nullable": true
+                            }
+                        }
+                    },
+                    "filePath": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "createdAt": {
+                        "type": "string",
+                        "format": "date-time",
+                        "nullable": true
+                    },
+                    "updatedAt": {
+                        "type": "string",
+                        "format": "date-time",
+                        "nullable": true
+                    }
+                }
+            }
+        },
+        "securitySchemes": {
+            "bearerAuth": {
+                "type": "http",
+                "scheme": "bearer",
+                "bearerFormat": "JWT"
+            }
+        }
+    }
+}

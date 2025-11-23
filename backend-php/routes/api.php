@@ -11,6 +11,7 @@ use App\Http\Controllers\VenueController;
 use App\Http\Controllers\MessageController;
 use App\Http\Controllers\FilesController;
 use App\Http\Controllers\AttachmentController;
+use App\Http\Controllers\CrisisController;
 use App\Routing\Router;
 
 return static function (Router $router): void {
@@ -64,6 +65,12 @@ return static function (Router $router): void {
     $router->post('/api/files/upload', [FilesController::class, 'uploadFile']);
 
     $router->post('/api/messages/send', [MessageController::class, 'send']);
+
+    $router->get('/api/crises', [CrisisController::class, 'index']);
+    $router->post('/api/crises', [CrisisController::class, 'store']);
+    $router->patch('/api/crises/{crisisId:\\d+}', [CrisisController::class, 'update']);
+    $router->get('/api/crises/{crisisId:\\d+}/responses', [CrisisController::class, 'responses']);
+    $router->post('/api/crises/{crisisId:\\d+}/responses', [CrisisController::class, 'storeResponse']);
     // Serve attachments uploaded to the attachments directory (safe handling in controller)
     $router->get('/attachments/{filename:.+}', [AttachmentController::class, 'serve']);
 };

@@ -14,6 +14,8 @@ DROP TABLE IF EXISTS Messages;
 
 DROP TABLE IF EXISTS Timelines;
 
+DROP TABLE IF EXISTS CrisisResponses;
+
 DROP TABLE IF EXISTS Crises;
 
 DROP TABLE IF EXISTS Votes;
@@ -234,10 +236,24 @@ CREATE TABLE
         published_by INT NOT NULL,
         published_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         target_committees JSON, -- Array of committee IDs
+        status ENUM ('draft', 'active', 'resolved', 'archived') DEFAULT 'active',
         responses_allowed BOOLEAN DEFAULT FALSE,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
         FOREIGN KEY (published_by) REFERENCES Users (id)
+    );
+
+CREATE TABLE
+    CrisisResponses (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        crisis_id INT NOT NULL,
+        user_id INT NOT NULL,
+        content JSON NOT NULL,
+        file_path VARCHAR(500),
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        FOREIGN KEY (crisis_id) REFERENCES Crises (id) ON DELETE CASCADE,
+        FOREIGN KEY (user_id) REFERENCES Users (id)
     );
 
 -- 时间轴、消息与附件
