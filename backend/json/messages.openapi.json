@@ -1,0 +1,110 @@
+{
+    "openapi": "3.0.3",
+    "info": {
+        "title": "MUN System Messages API",
+        "version": "1.0.0",
+        "description": "OpenAPI document describing the message sending endpoints."
+    },
+    "servers": [
+        {
+            "url": "http://localhost:8000",
+            "description": "Local PHP development server"
+        }
+    ],
+    "paths": {
+        "/api/messages/send": {
+            "post": {
+                "summary": "Send a message to a channel",
+                "operationId": "sendMessage",
+                "x-apifox-folder": "messages",
+                "security": [
+                    {
+                        "bearerAuth": []
+                    },
+                    {
+                        "cookieAuth": []
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/SendMessageRequest"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Message sent successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/SendMessageResponse"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid request data"
+                    },
+                    "401": {
+                        "description": "Unauthorized"
+                    }
+                }
+            }
+        }
+    },
+    "components": {
+        "schemas": {
+            "SendMessageRequest": {
+                "type": "object",
+                "required": [
+                    "channel",
+                    "content"
+                ],
+                "properties": {
+                    "channel": {
+                        "type": "string",
+                        "enum": [
+                            "presidium",
+                            "all",
+                            "crisis"
+                        ],
+                        "description": "Target channel for the message"
+                    },
+                    "content": {
+                        "type": "string",
+                        "maxLength": 1000,
+                        "description": "Message content"
+                    }
+                }
+            },
+            "SendMessageResponse": {
+                "type": "object",
+                "properties": {
+                    "success": {
+                        "type": "boolean",
+                        "example": true
+                    },
+                    "message": {
+                        "type": "string",
+                        "example": "Message sent successfully"
+                    }
+                }
+            }
+        },
+        "securitySchemes": {
+            "bearerAuth": {
+                "type": "http",
+                "scheme": "bearer"
+            },
+            "cookieAuth": {
+                "type": "apiKey",
+                "in": "cookie",
+                "name": "mun_session"
+            }
+        }
+    }
+}

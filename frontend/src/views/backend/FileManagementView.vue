@@ -1,45 +1,213 @@
 <script setup lang="ts">
-import { reactive, ref } from 'vue'
+import { onMounted, reactive, ref } from 'vue'
+import { api, type FileSubmission, type Venue, type FileReference, API_BASE } from '@/services/api'
+import PopupFileSelect from '@/components/PopupFileSelect.vue'
 
-type FileVisibility = '全体可见' | '主席团可见' | '指定会场'
-
-type ManagedFile = {
-  id: string
-  title: string
-  category: string
-  visibility: FileVisibility
-  updatedAt: string
-  owner: string
-}
-
-const managedFiles = ref<ManagedFile[]>([
-  { id: 'FM-01', title: '会议议程V3', category: '议程', visibility: '全体可见', updatedAt: '2025-05-10', owner: '秘书处' },
-  { id: 'FM-02', title: '危机背景包', category: '危机', visibility: '主席团可见', updatedAt: '2025-05-12', owner: '危机组' },
-  { id: 'FM-03', title: '立场文件模板', category: '模板', visibility: '全体可见', updatedAt: '2025-05-09', owner: '教研组' },
-])
-
-const publishForm = reactive({
-  title: '',
-  category: '',
-  visibility: '全体可见' as FileVisibility,
-  notes: '',
+const publishedFiles = ref<FileSubmission[]>([])
+const loading = ref(false)
+const committeeFilter = ref('')
+const searchQuery = ref('')
+const venues = ref<Venue[]>([])
+const showFileSelect = ref(false)
+const selectedFile = ref<FileSubmission | null>(null)
+const isEditingConfig = ref(false)
+const configForm = reactive({
+  type: '',
+  status: '',
+  visibility: '',
+  committee_id: '',
 })
 
-const uploadFile = () => {
-  if (!publishForm.title || !publishForm.category) return
-  managedFiles.value.unshift({
-    id: `FM-${(managedFiles.value.length + 1).toString().padStart(2, '0')}`,
-    title: publishForm.title,
-    category: publishForm.category,
-    visibility: publishForm.visibility,
-    updatedAt: new Date().toISOString().slice(0, 10),
-    owner: '当前用户',
-  })
-  publishForm.title = ''
-  publishForm.category = ''
-  publishForm.visibility = '全体可见'
-  publishForm.notes = ''
+// 选项常量
+const typeOptions = [
+  { value: 'position_paper', label: '立场文件' },
+  { value: 'working_paper', label: '工作文件' },
+  { value: 'draft_resolution', label: '决议草案' },
+  { value: 'press_release', label: '新闻稿' },
+  { value: 'other', label: '其他' },
+]
+
+const statusOptions = [
+  { value: 'draft', label: '草稿' },
+  { value: 'submitted', label: '待审批' },
+  { value: 'approved', label: '已批准' },
+  { value: 'published', label: '已发布' },
+  { value: 'rejected', label: '已拒绝' },
+]
+
+const visibilityOptions = [
+  { value: 'committee_only', label: '仅委员会' },
+  { value: 'all_committees', label: '所有委员会' },
+  { value: 'public', label: '公开' },
+]
+
+const publishForm = reactive({
+  committee_id: '',
+  type: '',
+  title: '',
+  description: '',
+  content_path: '',
+  visibility: 'committee_only',
+})
+
+const editForm = reactive({
+  title: '',
+  description: '',
+  visibility: 'committee_only',
+  dias_fb: '',
+})
+
+const fetchPublishedFiles = async () => {
+  console.log('fetchPublishedFiles called')
+  loading.value = true
+  try {
+    const params: { committeeId?: string; search?: string } = {}
+    if (committeeFilter.value) params.committeeId = committeeFilter.value
+    if (searchQuery.value.trim()) params.search = searchQuery.value.trim()
+    console.log('API params:', params)
+    const response = await api.getPublishedFiles(params)
+    console.log('API response:', response)
+    publishedFiles.value = response.items
+  } catch (error) {
+    console.error('Failed to fetch published files:', error)
+  } finally {
+    loading.value = false
+  }
 }
+
+const fetchVenues = async () => {
+  try {
+    const response = await api.getVenues()
+    venues.value = response.items
+  } catch (error) {
+    console.error('Failed to fetch venues:', error)
+  }
+}
+
+const publishFile = async () => {
+  if (!publishForm.title || !publishForm.type || !publishForm.content_path) return
+
+  try {
+    await api.publishFile({
+      committee_id: publishForm.committee_id ? parseInt(publishForm.committee_id) : undefined,
+      type: publishForm.type,
+      title: publishForm.title,
+      description: publishForm.description || undefined,
+      content_path: publishForm.content_path,
+      visibility: publishForm.visibility,
+    })
+    await fetchPublishedFiles()
+    // Reset form
+    Object.assign(publishForm, {
+      committee_id: '',
+      type: '',
+      title: '',
+      description: '',
+      content_path: '',
+      visibility: 'committee_only',
+    })
+  } catch (error) {
+    console.error('Failed to publish file:', error)
+  }
+}
+
+const handleFileSelect = (file: FileReference) => {
+  publishForm.content_path = file.title // 或者使用其他合适的字段
+}
+
+const selectFile = (file: FileSubmission) => {
+  selectedFile.value = file
+  // editingFile removed; unified editing handled by isEditingConfig
+  isEditingConfig.value = false // 退出配置编辑模式
+
+  // 初始化配置表单
+  configForm.type = file.type
+  configForm.status = file.status
+  configForm.visibility = file.visibility
+  configForm.committee_id = file.committee?.id.toString() || ''
+}
+
+const startEdit = (file: FileSubmission) => {
+  // Enter unified edit/config mode
+  selectedFile.value = file
+  isEditingConfig.value = true
+  // initialize the unified form including title/description
+  configForm.type = file.type
+  configForm.status = file.status
+  configForm.visibility = file.visibility
+  configForm.committee_id = file.committee?.id?.toString() || ''
+  // reuse editForm fields for title/description when present
+  editForm.title = file.title
+  editForm.description = file.description || ''
+  editForm.dias_fb = file.dias_fb || ''
+}
+
+const cancelEdit = () => {
+  isEditingConfig.value = false
+  // reset edit form fields
+  editForm.title = ''
+  editForm.description = ''
+}
+
+const deleteFile = async (file: FileSubmission) => {
+  if (!confirm(`确定要删除文件"${file.title}"吗？此操作不可撤销。`)) return
+
+  try {
+    await api.deletePublishedFile(file.id)
+    await fetchPublishedFiles()
+  } catch (error) {
+    console.error('Failed to delete file:', error)
+  }
+}
+
+const startEditConfig = () => {
+  isEditingConfig.value = true
+}
+
+const cancelEditConfig = () => {
+  isEditingConfig.value = false
+  // 重新初始化表单
+  if (selectedFile.value) {
+    configForm.type = selectedFile.value.type
+    configForm.status = selectedFile.value.status
+    configForm.visibility = selectedFile.value.visibility
+    configForm.committee_id = selectedFile.value.committee?.id.toString() || ''
+  }
+}
+
+const updateConfig = async () => {
+  if (!selectedFile.value) return
+
+  try {
+    const updateData: any = {
+      type: configForm.type,
+      status: configForm.status,
+      visibility: configForm.visibility,
+      // include editable fields
+      title: editForm.title || undefined,
+      description: editForm.description || undefined,
+      dias_fb: editForm.dias_fb || undefined,
+    }
+
+    if (configForm.committee_id) {
+      updateData.committee_id = parseInt(configForm.committee_id)
+    }
+
+    const updated = await api.updatePublishedFile(selectedFile.value.id, updateData)
+    // refresh local state with updated data
+    selectedFile.value = updated
+    await fetchPublishedFiles()
+    isEditingConfig.value = false
+  } catch (error) {
+    console.error('Failed to update file config:', error)
+  }
+}
+
+onMounted(() => {
+  console.log('FileManagementView mounted')
+  fetchPublishedFiles()
+  fetchVenues()
+})
 </script>
 
 <template>
@@ -50,63 +218,188 @@ const uploadFile = () => {
     </header>
 
     <section class="grid gap-6 xl:grid-cols-[1.6fr,1fr]">
+      <!-- 左侧：文件列表 -->
       <div class="space-y-4">
-        <div class="overflow-x-auto border border-base-200 rounded-2xl">
-          <table class="table table-sm">
-            <thead>
-              <tr>
-                <th>标题</th>
-                <th>分类</th>
-                <th>可见性</th>
-                <th>更新时间</th>
-                <th>维护者</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr v-for="file in managedFiles" :key="file.id">
-                <td>{{ file.title }}</td>
-                <td>
-                  <span class="badge badge-outline">{{ file.category }}</span>
-                </td>
-                <td>{{ file.visibility }}</td>
-                <td>{{ file.updatedAt }}</td>
-                <td>{{ file.owner }}</td>
-              </tr>
-              <tr v-if="managedFiles.length === 0">
-                <td colspan="5" class="text-center text-base-content/60">暂无文件</td>
-              </tr>
-            </tbody>
-          </table>
+        <div class="flex gap-4 mb-4">
+          <select v-model="committeeFilter" class="select select-bordered" @change="fetchPublishedFiles">
+            <option value="">所有委员会</option>
+            <option v-for="venue in venues" :key="venue.id" :value="venue.id.toString()">
+              {{ venue.name }} ({{ venue.code }})
+            </option>
+          </select>
+          <input v-model="searchQuery" type="text" placeholder="搜索文件标题或描述" class="input input-bordered flex-1"
+            @input="fetchPublishedFiles" />
         </div>
-        <div class="alert alert-info">
-          <span>提示：支持通过 API / WebDAV 批量同步文件。</span>
+
+        <div v-if="loading" class="flex justify-center py-8">
+          <span class="loading loading-spinner loading-lg"></span>
+        </div>
+
+        <div v-else-if="publishedFiles.length === 0" class="text-center py-8 text-base-content/60">
+          暂无文件
+        </div>
+
+        <div v-else class="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+          <div v-for="file in publishedFiles" :key="file.id"
+            class="card bg-base-100 border border-base-200 cursor-pointer transition-all hover:shadow-md"
+            :class="{ 'ring-2 ring-primary': selectedFile?.id === file.id }" @click="selectFile(file)">
+            <div class="card-body p-4">
+              <h3 class="card-title text-sm font-medium line-clamp-2">{{ file.title }}</h3>
+              <div class="flex items-center gap-2 mt-2">
+                <span class="badge badge-primary badge-xs">{{ file.type }}</span>
+                <span class="badge badge-outline badge-xs">{{statusOptions.find(opt => opt.value ===
+                  file.status)?.label || file.status }}</span>
+              </div>
+              <div class="text-xs text-base-content/60 mt-2">
+                {{ file.submitted_by.name }}
+              </div>
+              <div class="text-xs text-base-content/60">
+                {{ file.updated_at ? new Date(file.updated_at).toLocaleDateString() : '' }}
+              </div>
+            </div>
+          </div>
         </div>
       </div>
 
-      <form class="border border-base-200 rounded-2xl p-4 space-y-3" @submit.prevent="uploadFile">
-        <h3 class="font-semibold">发布文件</h3>
-        <label class="form-control">
-          <span class="label-text">文件标题</span>
-          <input v-model="publishForm.title" type="text" class="input input-bordered" placeholder="如：会议公告" />
-        </label>
-        <label class="form-control">
-          <span class="label-text">分类</span>
-          <input v-model="publishForm.category" type="text" class="input input-bordered" placeholder="危机/公告/模板" />
-        </label>
-        <label class="form-control">
-          <span class="label-text">可见范围</span>
-          <select v-model="publishForm.visibility" class="select select-bordered">
-            <option value="全体可见">全体可见</option>
-            <option value="主席团可见">主席团可见</option>
-            <option value="指定会场">指定会场</option>
-          </select>
-        </label>
-        <label class="form-control">
-          <span class="label-text">备注</span>
-          <textarea v-model="publishForm.notes" class="textarea textarea-bordered" rows="3" placeholder="补充说明"></textarea>
-        </label>
-        <button class="btn btn-primary w-full" type="submit">上传并发布</button>
-      </form>
+      <!-- 右侧：配置面板 -->
+      <div class="space-y-4">
+        <div v-if="!selectedFile" class="border border-base-200 rounded-2xl p-8 text-center text-base-content/60">
+          选择左侧的文件进行配置
+        </div>
+
+        <div v-else class="border border-base-200 rounded-2xl p-4 space-y-4">
+          <div class="flex items-center justify-between">
+            <h3 class="font-semibold text-lg">文件配置</h3>
+            <!-- <div class="flex gap-2">
+               <button v-if="!isEditingConfig" class="btn btn-sm btn-outline" @click="startEditConfig">修改配置</button> 
+            <<button v-else class="btn btn-sm btn-outline" @click="cancelEditConfig">取消</button> 
+          </div> -->
+          </div>
+
+          <!-- 只读模式 -->
+          <div v-if="!isEditingConfig" class="space-y-3">
+            <div>
+              <label class="label-text font-medium">标题</label>
+              <p class="text-sm text-base-content/70 mt-1">{{ selectedFile.title }}</p>
+            </div>
+
+            <div>
+              <label class="label-text font-medium">分类</label>
+              <p class="text-sm text-base-content/70 mt-1">{{typeOptions.find(opt => opt.value ===
+                selectedFile!.type)?.label || selectedFile!.type}}</p>
+            </div>
+
+            <div>
+              <label class="label-text font-medium">状态</label>
+              <p class="text-sm text-base-content/70 mt-1">{{statusOptions.find(opt => opt.value ===
+                selectedFile!.status)?.label || selectedFile!.status}}</p>
+            </div>
+
+            <div>
+              <label class="label-text font-medium">可见性</label>
+              <p class="text-sm text-base-content/70 mt-1">{{visibilityOptions.find(opt => opt.value ===
+                selectedFile!.visibility)?.label || selectedFile!.visibility}}</p>
+            </div>
+
+            <div>
+              <label class="label-text font-medium">委员会</label>
+              <p class="text-sm text-base-content/70 mt-1">
+                {{ selectedFile.committee ? `${selectedFile.committee.name} (${selectedFile.committee.code})` : '无' }}
+              </p>
+            </div>
+
+            <div>
+              <label class="label-text font-medium">更新时间</label>
+              <p class="text-sm text-base-content/70 mt-1">
+                {{ selectedFile.updated_at ? new Date(selectedFile.updated_at).toLocaleString() : '' }}
+              </p>
+            </div>
+
+            <div>
+              <label class="label-text font-medium">上传人</label>
+              <p class="text-sm text-base-content/70 mt-1">{{ selectedFile.submitted_by.name }}</p>
+            </div>
+
+            <div v-if="selectedFile.description">
+              <label class="label-text font-medium">描述</label>
+              <p class="text-sm text-base-content/70 mt-1">{{ selectedFile.description }}</p>
+            </div>
+
+            <div v-if="selectedFile.dias_fb">
+              <label class="label-text font-medium">主席意见</label>
+              <p class="text-sm text-base-content/70 mt-1 whitespace-pre-wrap">{{ selectedFile.dias_fb }}</p>
+            </div>
+          </div>
+
+          <!-- 编辑模式 -->
+          <form v-else class="space-y-3" @submit.prevent="updateConfig">
+            <div>
+              <label class="label-text font-medium">文件标题</label>
+              <input v-model="editForm.title" type="text" class="input input-bordered input-sm w-full" required />
+            </div>
+            <div>
+              <label class="label-text font-medium">描述</label>
+              <textarea v-model="editForm.description" class="textarea textarea-bordered textarea-sm w-full"
+                rows="3"></textarea>
+            </div>
+            <div>
+              <label class="label-text font-medium">主席意见（Dias feedback）</label>
+              <textarea v-model="editForm.dias_fb" class="textarea textarea-bordered textarea-sm w-full" rows="3"
+                placeholder="主席团反馈（可选）"></textarea>
+            </div>
+            <div>
+              <label class="label-text font-medium">分类</label>
+              <select v-model="configForm.type" class="select select-bordered select-sm w-full" required>
+                <option v-for="option in typeOptions" :key="option.value" :value="option.value">
+                  {{ option.label }}
+                </option>
+              </select>
+            </div>
+
+            <div>
+              <label class="label-text font-medium">状态</label>
+              <select v-model="configForm.status" class="select select-bordered select-sm w-full" required>
+                <option v-for="option in statusOptions" :key="option.value" :value="option.value">
+                  {{ option.label }}
+                </option>
+              </select>
+            </div>
+
+            <div>
+              <label class="label-text font-medium">可见性</label>
+              <select v-model="configForm.visibility" class="select select-bordered select-sm w-full" required>
+                <option v-for="option in visibilityOptions" :key="option.value" :value="option.value">
+                  {{ option.label }}
+                </option>
+              </select>
+            </div>
+
+            <div>
+              <label class="label-text font-medium">委员会</label>
+              <select v-model="configForm.committee_id" class="select select-bordered select-sm w-full">
+                <option value="">无</option>
+                <option v-for="venue in venues" :key="venue.id" :value="venue.id.toString()">
+                  {{ venue.name }} ({{ venue.code }})
+                </option>
+              </select>
+            </div>
+
+            <button type="submit" class="btn btn-primary btn-sm w-full">保存配置</button>
+          </form>
+
+          <div class="divider"></div>
+
+          <div class="flex gap-2">
+            <a :href="`${API_BASE}${selectedFile.content_path}`" target="_blank" class="btn btn-primary flex-1">查看文件</a>
+            <button class="btn btn-outline" @click="startEdit(selectedFile)">编辑</button>
+            <button class="btn btn-error" @click="deleteFile(selectedFile)">删除</button>
+          </div>
+        </div>
+
+        <!-- 编辑表单已合并到右侧配置面板 -->
+      </div>
     </section>
+
+    <PopupFileSelect v-model="showFileSelect" @select="handleFileSelect" />
   </div>
 </template>

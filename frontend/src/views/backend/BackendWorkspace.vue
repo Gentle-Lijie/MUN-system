@@ -36,7 +36,7 @@ const featureGroups: FeatureGroup[] = [
             { label: '文件审批', description: '查看与审批代表提交', to: '/backend/presidium/file-approval' },
             { label: '文件管理', description: '发布、分类、可见性', to: '/backend/presidium/file-management' },
             { label: '危机管理', description: '发布危机与追踪反馈', to: '/backend/presidium/crisis' },
-            { label: '时间轴管理', description: '事件记录与时间流速', to: '/backend/presidium/timeline' },
+            // { label: '时间轴管理', description: '事件记录与时间流速', to: '/backend/presidium/timeline' },
             { label: '消息管理', description: '广播通知与历史', to: '/backend/presidium/messages' },
         ],
     },

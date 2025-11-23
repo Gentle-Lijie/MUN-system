@@ -8,6 +8,9 @@ use App\Http\Controllers\MotionController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\UserPermissionController;
 use App\Http\Controllers\VenueController;
+use App\Http\Controllers\MessageController;
+use App\Http\Controllers\FilesController;
+use App\Http\Controllers\AttachmentController;
 use App\Routing\Router;
 
 return static function (Router $router): void {
@@ -48,4 +51,19 @@ return static function (Router $router): void {
 
     $router->post('/api/motions', [MotionController::class, 'create']);
     $router->post('/api/motions/{motionId:\d+}/{listId:\d+}', [MotionController::class, 'updateSpeakerList']);
+
+    $router->get('/api/files/submissions', [FilesController::class, 'getSubmissions']);
+    $router->post('/api/files/submissions', [FilesController::class, 'submitFile']);
+    $router->patch('/api/files/submissions/{submissionId:\d+}', [FilesController::class, 'updateSubmission']);
+    $router->post('/api/files/submissions/{submissionId:\d+}/decision', [FilesController::class, 'decideSubmission']);
+    $router->get('/api/files/published', [FilesController::class, 'getPublished']);
+    $router->post('/api/files/published', [FilesController::class, 'publishFile']);
+    $router->patch('/api/files/published/{fileId:\d+}', [FilesController::class, 'updatePublished']);
+    $router->delete('/api/files/published/{fileId:\d+}', [FilesController::class, 'deletePublished']);
+    $router->get('/api/files/reference', [FilesController::class, 'getReference']);
+    $router->post('/api/files/upload', [FilesController::class, 'uploadFile']);
+
+    $router->post('/api/messages/send', [MessageController::class, 'send']);
+    // Serve attachments uploaded to the attachments directory (safe handling in controller)
+    $router->get('/attachments/{filename:.+}', [AttachmentController::class, 'serve']);
 };

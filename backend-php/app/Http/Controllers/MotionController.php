@@ -118,24 +118,24 @@ class MotionController extends Controller
      * POST /api/motions/{motionId}/{listId}
      * 更新 speakerList 的发言顺序和状态
      */
-    public function updateSpeakerList(Request $request, int $motionId, int $listId): JsonResponse
+    public function updateSpeakerList(Request $request, array $params): JsonResponse
     {
         $user = Auth::user($this->app, $request, false);
         if (!$user) {
             return $this->json(['error' => 'Unauthorized'], 401);
         }
 
-        $motion = Motion::query()->find($motionId);
+        $motion = Motion::query()->find((int) $params['motionId']);
         if (!$motion) {
             return $this->json(['error' => 'Motion not found'], 404);
         }
 
-        $speakerList = SpeakerList::query()->find($listId);
+        $speakerList = SpeakerList::query()->find((int) $params['listId']);
         if (!$speakerList) {
             return $this->json(['error' => 'Speaker list not found'], 404);
         }
 
-        if ($motion->speaker_list_id !== $listId) {
+        if ($motion->speaker_list_id !== (int) $params['listId']) {
             return $this->json(['error' => 'Speaker list does not belong to this motion'], 400);
         }
 
@@ -150,7 +150,7 @@ class MotionController extends Controller
 
             if ($entryId) {
                 $entry = SpeakerListEntry::query()->find($entryId);
-                if ($entry && $entry->speaker_list_id === $listId) {
+                if ($entry && $entry->speaker_list_id === (int) $params['listId']) {
                     if ($position !== null) {
                         $entry->position = $position;
                     }
@@ -163,7 +163,7 @@ class MotionController extends Controller
         }
 
         // 重新加载 speakerList 和其条目
-        $speakerList = SpeakerList::query()->with('entries')->find($listId);
+        $speakerList = SpeakerList::query()->with('entries')->find((int) $params['listId']);
 
         return $this->json([
             'speakerList' => $speakerList->toApiResponse(),

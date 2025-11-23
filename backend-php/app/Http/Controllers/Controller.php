@@ -25,11 +25,12 @@ abstract class Controller
      */
     protected function body(Request $request): array
     {
-        if ($request->getContentTypeFormat() === 'json') {
-            $data = json_decode($request->getContent(), true);
-            if (is_array($data)) {
-                return $data;
-            }
+        // Try to parse body as JSON for any HTTP method. Some clients send JSON with
+        // PATCH/PUT and getContentTypeFormat may not always return 'json'. Prefer
+        // parsing raw content first and fall back to form parameters.
+        $data = json_decode($request->getContent(), true);
+        if (is_array($data)) {
+            return $data;
         }
         return $request->request->all();
     }

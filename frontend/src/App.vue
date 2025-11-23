@@ -9,7 +9,6 @@ type UserProfile = {
 
 const navItems = [
   { label: '欢迎', to: '/welcome' },
-  { label: '显示大屏', to: '/display' },
   { label: '会议管理', to: '/management' },
   { label: '后台功能', to: '/backend' },
   { label: '会场小窗口', to: '/mini-window' },
@@ -50,7 +49,7 @@ const getAvatarStyle = (name: string) => {
     const color = theme.value === 'light' ? '#FFFFFF' : '#000000';
     return { backgroundColor, color };
 }
-const needsLogin = computed(() => !isLoggedIn.value && route.path !== '/display' && route.path !== '/welcome')
+const needsLogin = computed(() => !isLoggedIn.value && route.path !== '/welcome')
 
 const toggleTheme = () => {
   theme.value = theme.value === 'light' ? 'dark' : 'light'
@@ -218,7 +217,7 @@ watch(needsLogin, (newVal) => {
       </button>
       <main class="flex-1 overflow-hidden">
         <div class="h-full">
-          <RouterView v-if="isLoggedIn || route.path === '/display' || route.path.startsWith('/backend') || route.path === '/welcome'" />
+          <RouterView v-if="isLoggedIn || route.path.startsWith('/backend') || route.path === '/welcome'" />
         </div>
       </main>
     </div>

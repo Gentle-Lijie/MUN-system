@@ -36,6 +36,10 @@ const router = createRouter({
       meta: { title: '欢迎' },
     },
     {
+      path: '/display',
+      redirect: '/welcome', // 或者重定向到选择committee的页面
+    },
+    {
       path: '/display/:committeeId',
       name: 'display',
       component: DisplayBoard,
