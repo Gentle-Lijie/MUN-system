@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Carbon;
 
 class CommitteeSession extends Model
@@ -16,6 +17,7 @@ class CommitteeSession extends Model
         'chair',
         'start_time',
         'duration_minutes',
+        'current_speaker_list_id',
     ];
 
     protected $casts = [
@@ -27,6 +29,16 @@ class CommitteeSession extends Model
     public function committee(): BelongsTo
     {
         return $this->belongsTo(Committee::class, 'committee_id');
+    }
+
+    public function motions(): HasMany
+    {
+        return $this->hasMany(Motion::class, 'committee_session_id');
+    }
+
+    public function currentSpeakerList(): BelongsTo
+    {
+        return $this->belongsTo(SpeakerList::class, 'current_speaker_list_id');
     }
 
     /**

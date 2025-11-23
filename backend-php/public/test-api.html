@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="UTF-8">
+    <title>测试Display Board API</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+        }
+
+        .section {
+            margin: 20px 0;
+            padding: 10px;
+            border: 1px solid #ccc;
+        }
+
+        pre {
+            background: #f5f5f5;
+            padding: 10px;
+            overflow: auto;
+        }
+    </style>
+</head>
+
+<body>
+    <h1>测试Display Board API</h1>
+
+    <div class="section">
+        <h2>1. 获取大屏数据</h2>
+        <button onclick="testGetBoard()">测试 GET /api/display/board</button>
+        <pre id="board-result"></pre>
+    </div>
+
+    <div class="section">
+        <h2>2. 获取会议历程</h2>
+        <button onclick="testGetSessions()">测试 GET /api/display/sessions</button>
+        <pre id="sessions-result"></pre>
+    </div>
+
+    <script>
+        const committeeId = 1;
+
+        async function testGetBoard() {
+            try {
+                const response = await fetch(`http://localhost:8000/api/display/board?committeeId=${committeeId}`);
+                const data = await response.json();
+
+                document.getElementById('board-result').textContent =
+                    '状态: ' + response.status + '\n\n' +
+                    '历史事件:\n' +
+                    JSON.stringify(data.historyEvents, null, 2);
+
+                console.log('Board data:', data);
+            } catch (error) {
+                document.getElementById('board-result').textContent = '错误: ' + error.message;
+            }
+        }
+
+        async function testGetSessions() {
+            try {
+                const response = await fetch(`http://localhost:8000/api/display/sessions?committeeId=${committeeId}`);
+                const data = await response.json();
+
+                document.getElementById('sessions-result').textContent =
+                    '状态: ' + response.status + '\n\n' +
+                    'Sessions:\n' +
+                    JSON.stringify(data.items, null, 2);
+
+                console.log('Sessions data:', data);
+            } catch (error) {
+                document.getElementById('sessions-result').textContent = '错误: ' + error.message;
+            }
+        }
+    </script>
+</body>
+
+</html>

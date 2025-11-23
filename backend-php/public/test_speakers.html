@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>测试添加发言者</title>
+    <style>
+        body {
+            font-family: sans-serif;
+            padding: 20px;
+        }
+
+        button {
+            padding: 10px 20px;
+            margin: 5px;
+            font-size: 16px;
+        }
+
+        pre {
+            background: #f0f0f0;
+            padding: 10px;
+            border-radius: 4px;
+        }
+
+        .success {
+            color: green;
+        }
+
+        .error {
+            color: red;
+        }
+    </style>
+</head>
+
+<body>
+    <h1>测试添加发言者 API</h1>
+
+    <div>
+        <h2>1. 获取大屏数据</h2>
+        <button onclick="loadBoard()">加载大屏数据</button>
+        <pre id="boardData"></pre>
+    </div>
+
+    <div>
+        <h2>2. 添加发言者</h2>
+        <label>Speaker List ID: <input type="number" id="speakerListId" value="9"></label><br>
+        <label>Delegate ID: <input type="number" id="delegateId" value="1"></label><br>
+        <button onclick="addSpeaker()">添加发言者</button>
+        <pre id="addResult"></pre>
+    </div>
+
+    <div>
+        <h2>3. 重新加载验证</h2>
+        <button onclick="loadBoard()">重新加载大屏数据</button>
+    </div>
+
+    <script>
+        async function loadBoard() {
+            const result = document.getElementById('boardData');
+            try {
+                const response = await fetch('http://localhost:8000/api/display/board?committeeId=1');
+                const data = await response.json();
+                result.innerHTML = JSON.stringify(data, null, 2);
+                result.className = 'success';
+
+                // 自动填充 speakerListId
+                if (data.speakerListId) {
+                    document.getElementById('speakerListId').value = data.speakerListId;
+                }
+            } catch (error) {
+                result.innerHTML = 'Error: ' + error.message;
+                result.className = 'error';
+            }
+        }
+
+        async function addSpeaker() {
+            const result = document.getElementById('addResult');
+            const speakerListId = document.getElementById('speakerListId').value;
+            const delegateId = document.getElementById('delegateId').value;
+
+            try {
+                const response = await fetch('http://localhost:8000/api/display/speakers', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        speakerListId: parseInt(speakerListId),
+                        delegateId: parseInt(delegateId)
+                    })
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${await response.text()}`);
+                }
+
+                const data = await response.json();
+                result.innerHTML = JSON.stringify(data, null, 2);
+                result.className = 'success';
+            } catch (error) {
+                result.innerHTML = 'Error: ' + error.message;
+                result.className = 'error';
+            }
+        }
+
+        // 页面加载时自动加载大屏数据
+        loadBoard();
+    </script>
+</body>
+
+</html>

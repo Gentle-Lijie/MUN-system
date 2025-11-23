@@ -15,6 +15,7 @@ class Delegate extends Model
         'committee_id',
         'country',
         'veto_allowed',
+        'status',
     ];
 
     protected $casts = [
@@ -46,6 +47,7 @@ class Delegate extends Model
             'committeeId' => $this->committee_id,
             'country' => $this->country,
             'vetoAllowed' => (bool) $this->veto_allowed,
+            'status' => $this->status,
             'userName' => $this->user?->name,
             'userEmail' => $this->user?->email,
             'userOrganization' => $this->user?->organization,

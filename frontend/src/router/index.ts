@@ -20,6 +20,7 @@ const DelegateProfileView = () => import('@/views/backend/DelegateProfileView.vu
 const DelegateDocumentsView = () => import('@/views/backend/DelegateDocumentsView.vue')
 const DelegateMessagesView = () => import('@/views/backend/DelegateMessagesView.vue')
 const DelegateCrisisResponseView = () => import('@/views/backend/DelegateCrisisResponseView.vue')
+const TestPopupDelegate = () => import('@/views/TestPopupDelegate.vue')
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -35,7 +36,7 @@ const router = createRouter({
       meta: { title: '欢迎' },
     },
     {
-      path: '/display',
+      path: '/display/:committeeId',
       name: 'display',
       component: DisplayBoard,
       meta: { title: '会议显示大屏' },
@@ -57,6 +58,12 @@ const router = createRouter({
       name: 'motion-launcher',
       component: MotionLauncher,
       meta: { title: '动议弹窗演示' },
+    },
+    {
+      path: '/test-popup',
+      name: 'test-popup',
+      component: TestPopupDelegate,
+      meta: { title: '测试 PopupDelegate' },
     },
     {
       path: '/file-select',

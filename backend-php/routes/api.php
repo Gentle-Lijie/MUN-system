@@ -2,7 +2,9 @@
 
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\DelegateController;
+use App\Http\Controllers\DisplayController;
 use App\Http\Controllers\HealthController;
+use App\Http\Controllers\MotionController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\UserPermissionController;
 use App\Http\Controllers\VenueController;
@@ -33,4 +35,17 @@ return static function (Router $router): void {
     $router->get('/api/venues', [VenueController::class, 'index']);
     $router->post('/api/venues/{venueId:\d+}', [VenueController::class, 'update']);
     $router->post('/api/venues/{venueId:\d+}/sessions', [VenueController::class, 'addSession']);
+
+    $router->get('/api/display/board', [DisplayController::class, 'getBoard']);
+    $router->get('/api/display/sessions', [DisplayController::class, 'getSessions']);
+    $router->post('/api/display/speakers', [DisplayController::class, 'addSpeaker']);
+    $router->post('/api/display/roll-call', [DisplayController::class, 'rollCall']);
+    $router->post('/api/display/start-session', [DisplayController::class, 'startSession']);
+    $router->post('/api/display/switch-speaker-list', [DisplayController::class, 'switchSpeakerList']);
+    $router->post('/api/display/timer/start', [DisplayController::class, 'startTimer']);
+    $router->post('/api/display/timer/stop', [DisplayController::class, 'stopTimer']);
+    $router->post('/api/display/speaker/next', [DisplayController::class, 'nextSpeaker']);
+
+    $router->post('/api/motions', [MotionController::class, 'create']);
+    $router->post('/api/motions/{motionId:\d+}/{listId:\d+}', [MotionController::class, 'updateSpeakerList']);
 };

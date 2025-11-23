@@ -38,19 +38,28 @@
                             <div class="grid gap-4">
                                 <fieldset v-if="activeMotion?.requires.country" class="fieldset mb-3">
                                     <legend class="fieldset-legend text-base font-semibold mb-3">发起国家</legend>
-                                    <label class="input input-bordered flex items-center gap-2">
-                                        <svg class="h-[1.2em] opacity-50" xmlns="http://www.w3.org/2000/svg"
-                                            viewBox="0 0 24 24" fill="none">
-                                            <path
-                                                d="M12 12c2.7 0 8 1.34 8 4v2a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2v-2c0-2.66 5.3-4 8-4z"
-                                                stroke="currentColor" stroke-width="2" stroke-linecap="round"
-                                                stroke-linejoin="round" />
-                                            <circle cx="12" cy="7" r="4" stroke="currentColor" stroke-width="2"
-                                                stroke-linecap="round" stroke-linejoin="round" />
-                                        </svg>
-                                        <input v-model="formState.country" type="text" placeholder="请输入发起国家"
-                                            class="grow" required />
-                                    </label>
+                                    <div class="grid grid-cols-[1fr_auto] gap-2">
+                                        <label class="input input-bordered flex items-center gap-2">
+                                            <svg class="h-[1.2em] opacity-50" xmlns="http://www.w3.org/2000/svg"
+                                                viewBox="0 0 24 24" fill="none">
+                                                <path
+                                                    d="M12 12c2.7 0 8 1.34 8 4v2a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2v-2c0-2.66 5.3-4 8-4z"
+                                                    stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                                    stroke-linejoin="round" />
+                                                <circle cx="12" cy="7" r="4" stroke="currentColor" stroke-width="2"
+                                                    stroke-linecap="round" stroke-linejoin="round" />
+                                            </svg>
+                                            <input v-model="formState.country" type="text" placeholder="请输入发起国家"
+                                                class="grow" required />
+                                        </label>
+                                        <select @change="onDelegateSelect" class="select select-bordered w-48">
+                                            <option value="">选择代表</option>
+                                            <option v-for="delegate in delegates" :key="delegate.id"
+                                                :value="delegate.id">
+                                                {{ delegate.country }} - {{ delegate.userName }}
+                                            </option>
+                                        </select>
+                                    </div>
                                 </fieldset>
                                 <div v-if="activeMotion?.requires.unitTime && activeMotion?.requires.totalTime"
                                     class="grid grid-cols-2 gap-4">
@@ -115,6 +124,14 @@
                                 <button v-if="activeMotion?.id === 'reading' || activeMotion?.id === 'voting-doc'"
                                     type="button" class="btn btn-outline btn-lg text-lg mb-3"
                                     @click="showFileSelect = true">关联文件</button>
+
+                                <fieldset class="fieldset mb-3">
+                                    <label class="label cursor-pointer justify-start gap-4">
+                                        <input type="checkbox" v-model="formState.triggerRollCall" class="checkbox" />
+                                        <span class="label-text text-lg">动议通过后发起点名</span>
+                                    </label>
+                                    <p class="fieldset-label text-sm text-base-content/70">勾选后，动议获得通过时会自动触发代表点名</p>
+                                </fieldset>
                             </div>
                             <div class="grid gap-4 lg:grid-cols-[4fr_4fr_2fr]">
                                 <button type="button" class="btn btn-success btn-lg text-lg"
@@ -155,6 +172,8 @@ type MotionFormState = {
     unitTime: number
     totalTime: number
     notes: string
+    triggerRollCall: boolean
+    proposerId?: number
 }
 
 const motions: MotionDefinition[] = [
@@ -244,12 +263,14 @@ const motions: MotionDefinition[] = [
     },
 ]
 
-const props = defineProps<{ modelValue: boolean }>()
+const props = defineProps<{ modelValue: boolean; committeeId: string }>()
 const emit = defineEmits<{
     (e: 'update:modelValue', value: boolean): void
     (e: 'pass', payload: { motion: MotionDefinition; form: MotionFormState }): void
     (e: 'fail', payload: { motion: MotionDefinition; form: MotionFormState }): void
 }>()
+
+const delegates = ref<any[]>([])
 
 const selectedMotionId = ref(motions[0]?.id ?? '')
 const formState = reactive<MotionFormState>({
@@ -257,16 +278,36 @@ const formState = reactive<MotionFormState>({
     unitTime: 2,
     totalTime: 20,
     notes: '',
+    triggerRollCall: false,
+    proposerId: undefined,
 })
 const showFileSelect = ref(false)
 
 const activeMotion = computed(() => motions.find((motion) => motion.id === selectedMotionId.value))
 
+// 加载代表列表
+const loadDelegates = async () => {
+    if (!props.committeeId) return
+    try {
+        const response = await fetch(`http://localhost:8000/api/venues/${props.committeeId}/delegate`, {
+            credentials: 'include'
+        })
+        if (!response.ok) throw new Error('Failed to load delegates')
+        const data = await response.json()
+        delegates.value = data.items || []
+    } catch (error) {
+        console.error('Failed to load delegates:', error)
+    }
+}
+
 watch(
     () => props.modelValue,
     (visible) => {
-        if (visible) return
-        resetForm()
+        if (visible) {
+            loadDelegates()
+        } else {
+            resetForm()
+        }
     }
 )
 
@@ -275,8 +316,39 @@ function resetForm() {
     formState.unitTime = 2
     formState.totalTime = 20
     formState.notes = ''
+    formState.triggerRollCall = false
+    formState.proposerId = undefined
     selectedMotionId.value = motions[0]?.id ?? ''
 }
+
+// 监听动议类型变化，自动设置点名选项
+watch(selectedMotionId, (newId) => {
+    // 对文件投票默认勾选点名
+    formState.triggerRollCall = newId === 'voting-doc'
+})
+
+// 处理代表选择
+const onDelegateSelect = (event: Event) => {
+    const target = event.target as HTMLSelectElement
+    const delegateId = target.value
+    if (delegateId) {
+        const delegate = delegates.value.find(d => d.id.toString() === delegateId)
+        if (delegate) {
+            formState.country = delegate.country
+            formState.proposerId = delegate.id
+        }
+    }
+}
+
+// 监听手动输入国家，如果不匹配代表则清除proposerId
+watch(() => formState.country, (newCountry) => {
+    const matchedDelegate = delegates.value.find(d => d.country === newCountry)
+    if (matchedDelegate) {
+        formState.proposerId = matchedDelegate.id
+    } else {
+        formState.proposerId = undefined
+    }
+})
 
 function handlePass() {
     if (!activeMotion.value) return

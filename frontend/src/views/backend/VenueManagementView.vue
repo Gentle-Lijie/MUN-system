@@ -248,7 +248,7 @@ const handleSaveTimeConfig = async () => {
 
 const handleDisplayBoard = (committee: CommitteeRecord, mode: 'preview' | 'sync') => {
   if (mode === 'preview') {
-    const url = `/display?committee=${committee.id}`
+    const url = `/display/${committee.id}`
     window.open(url, '_blank', 'noopener')
     return
   }

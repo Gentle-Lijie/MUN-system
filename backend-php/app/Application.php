@@ -60,13 +60,29 @@ class Application
                 'errors' => $exception->getErrors(),
             ], $exception->getStatusCode()), $request);
         } catch (Throwable $throwable) {
+            // Log the error
+            error_log('Exception: ' . $throwable->getMessage());
+            error_log('File: ' . $throwable->getFile() . ':' . $throwable->getLine());
+            error_log('Trace: ' . $throwable->getTraceAsString());
+            
+            // Always return detailed error in development
+            $errorData = [
+                'error' => 'Internal Server Error',
+                'message' => $throwable->getMessage(),
+                'file' => $throwable->getFile(),
+                'line' => $throwable->getLine(),
+                'trace' => explode("\n", $throwable->getTraceAsString()),
+            ];
+            
             if ($this->config('app.debug')) {
-                return $this->applyCors(new JsonResponse([
-                    'message' => $throwable->getMessage(),
-                    'trace' => $throwable->getTraceAsString(),
-                ], 500), $request);
+                return $this->applyCors(new JsonResponse($errorData, 500), $request);
             }
-            return $this->applyCors(new JsonResponse(['message' => 'Internal Server Error'], 500), $request);
+            
+            // In production, still show message but not trace
+            return $this->applyCors(new JsonResponse([
+                'error' => 'Internal Server Error',
+                'message' => $throwable->getMessage(),
+            ], 500), $request);
         }
     }
 

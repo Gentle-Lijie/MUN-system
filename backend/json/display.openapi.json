@@ -1,0 +1,916 @@
+{
+    "openapi": "3.0.0",
+    "info": {
+        "title": "MUN Display Board & Motion API",
+        "version": "1.0.0",
+        "description": "API endpoints for display board management, speaker lists, and motions"
+    },
+    "paths": {
+        "/api/display/board": {
+            "get": {
+                "summary": "Get display board data",
+                "description": "Retrieves complete state for the display board including committee info, statistics, speaker queue, and history",
+                "parameters": [
+                    {
+                        "name": "committeeId",
+                        "in": "query",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        },
+                        "description": "Committee ID to fetch data for"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Display board data",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/DisplayBoardResponse"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "$ref": "#/components/responses/BadRequest"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/NotFound"
+                    }
+                }
+            }
+        },
+        "/api/display/sessions": {
+            "get": {
+                "summary": "Get session history",
+                "description": "Retrieves all sessions (会议历程) for a committee in reverse chronological order",
+                "parameters": [
+                    {
+                        "name": "committeeId",
+                        "in": "query",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        },
+                        "description": "Committee ID to fetch sessions for"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "List of sessions",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "items": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/components/schemas/Session"
+                                            }
+                                        },
+                                        "total": {
+                                            "type": "integer"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "$ref": "#/components/responses/BadRequest"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/NotFound"
+                    }
+                }
+            }
+        },
+        "/api/display/speakers": {
+            "post": {
+                "summary": "Add speaker to queue",
+                "description": "Adds a delegate to the speaker list queue",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/AddSpeakerRequest"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Speaker added successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "entry": {
+                                            "$ref": "#/components/schemas/SpeakerListEntry"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "$ref": "#/components/responses/BadRequest"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Unauthorized"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/NotFound"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/api/display/roll-call": {
+            "post": {
+                "summary": "Initiate roll call",
+                "description": "Updates attendance status for all delegates in a committee",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/RollCallRequest"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Roll call completed, returns updated statistics",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/StatisticsResponse"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "$ref": "#/components/responses/BadRequest"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Unauthorized"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/NotFound"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/api/display/start-session": {
+            "post": {
+                "summary": "Start committee session",
+                "description": "Changes committee status from preparation/paused to in_session",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "required": [
+                                    "committeeId"
+                                ],
+                                "properties": {
+                                    "committeeId": {
+                                        "type": "integer",
+                                        "description": "Committee ID to start"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Session started successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "committee": {
+                                            "type": "object",
+                                            "properties": {
+                                                "id": {
+                                                    "type": "integer"
+                                                },
+                                                "status": {
+                                                    "type": "string",
+                                                    "enum": [
+                                                        "in_session"
+                                                    ]
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "$ref": "#/components/responses/BadRequest"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Unauthorized"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/NotFound"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/api/motions": {
+            "post": {
+                "summary": "Create motion",
+                "description": "Records motion vote results and creates associated speaker list if needed",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/CreateMotionRequest"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Motion created successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "motion": {
+                                            "$ref": "#/components/schemas/Motion"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "$ref": "#/components/responses/BadRequest"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Unauthorized"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/NotFound"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/api/motions/{motionId}/{listId}": {
+            "post": {
+                "summary": "Update speaker list",
+                "description": "Updates speaker order and status for a motion's speaker list",
+                "parameters": [
+                    {
+                        "name": "motionId",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        },
+                        "description": "Motion ID"
+                    },
+                    {
+                        "name": "listId",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        },
+                        "description": "Speaker list ID"
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/UpdateSpeakerListRequest"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Speaker list updated successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "speakerList": {
+                                            "$ref": "#/components/schemas/SpeakerList"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "$ref": "#/components/responses/BadRequest"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Unauthorized"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/NotFound"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        }
+    },
+    "components": {
+        "schemas": {
+            "DisplayBoardResponse": {
+                "type": "object",
+                "properties": {
+                    "committee": {
+                        "type": "object",
+                        "properties": {
+                            "id": {
+                                "type": "integer"
+                            },
+                            "code": {
+                                "type": "string"
+                            },
+                            "name": {
+                                "type": "string"
+                            },
+                            "venue": {
+                                "type": "string",
+                                "nullable": true
+                            },
+                            "status": {
+                                "type": "string",
+                                "enum": [
+                                    "preparation",
+                                    "in_session",
+                                    "paused",
+                                    "closed"
+                                ]
+                            },
+                            "timeConfig": {
+                                "$ref": "#/components/schemas/TimeConfig"
+                            }
+                        }
+                    },
+                    "statistics": {
+                        "$ref": "#/components/schemas/Statistics"
+                    },
+                    "speakerQueue": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/SpeakerQueueItem"
+                        }
+                    },
+                    "currentSession": {
+                        "$ref": "#/components/schemas/Session"
+                    },
+                    "historyEvents": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/HistoryEvent"
+                        }
+                    }
+                }
+            },
+            "TimeConfig": {
+                "type": "object",
+                "properties": {
+                    "flowSpeed": {
+                        "type": "number",
+                        "description": "Time flow multiplier (e.g., 60 = 60x speed)"
+                    },
+                    "realTimeAnchor": {
+                        "type": "string",
+                        "format": "date-time",
+                        "description": "Real-time anchor point in ISO 8601 format"
+                    },
+                    "updateTime": {
+                        "type": "string",
+                        "format": "date-time",
+                        "description": "Timestamp when config was last updated"
+                    }
+                }
+            },
+            "Statistics": {
+                "type": "object",
+                "properties": {
+                    "total": {
+                        "type": "integer",
+                        "description": "Total number of delegates"
+                    },
+                    "present": {
+                        "type": "integer",
+                        "description": "Number of present delegates"
+                    },
+                    "twoThirds": {
+                        "type": "integer",
+                        "description": "2/3 majority threshold"
+                    },
+                    "half": {
+                        "type": "integer",
+                        "description": "1/2 majority threshold"
+                    },
+                    "twentyPercent": {
+                        "type": "integer",
+                        "description": "20% threshold"
+                    }
+                }
+            },
+            "StatisticsResponse": {
+                "allOf": [
+                    {
+                        "$ref": "#/components/schemas/Statistics"
+                    }
+                ]
+            },
+            "SpeakerQueueItem": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "integer"
+                    },
+                    "country": {
+                        "type": "string"
+                    },
+                    "delegate": {
+                        "type": "string"
+                    },
+                    "status": {
+                        "type": "string",
+                        "enum": [
+                            "waiting",
+                            "speaking"
+                        ]
+                    },
+                    "position": {
+                        "type": "integer"
+                    }
+                }
+            },
+            "HistoryEvent": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "integer"
+                    },
+                    "title": {
+                        "type": "string"
+                    },
+                    "description": {
+                        "type": "string"
+                    },
+                    "createdAt": {
+                        "type": "string",
+                        "format": "date-time"
+                    }
+                }
+            },
+            "Session": {
+                "type": "object",
+                "nullable": true,
+                "properties": {
+                    "id": {
+                        "type": "integer"
+                    },
+                    "committeeId": {
+                        "type": "integer"
+                    },
+                    "type": {
+                        "type": "string",
+                        "enum": [
+                            "open_main_list",
+                            "close_main_list",
+                            "set_speaking_time",
+                            "moderated_caucus",
+                            "unmoderated_caucus",
+                            "introduce_draft_resolution",
+                            "introduce_amendment",
+                            "vote_on_draft_resolution",
+                            "vote_on_amendment",
+                            "consultation_of_the_whole",
+                            "roll_call_vote",
+                            "adjourn_meeting",
+                            "main_list"
+                        ]
+                    },
+                    "unitTimeSeconds": {
+                        "type": "integer",
+                        "nullable": true
+                    },
+                    "totalTimeSeconds": {
+                        "type": "integer",
+                        "nullable": true
+                    },
+                    "proposerId": {
+                        "type": "integer",
+                        "nullable": true
+                    },
+                    "proposerName": {
+                        "type": "string",
+                        "nullable": true,
+                        "description": "Name of the proposer delegate user"
+                    },
+                    "proposerCountry": {
+                        "type": "string",
+                        "nullable": true,
+                        "description": "Country represented by proposer"
+                    },
+                    "isApproved": {
+                        "type": "boolean"
+                    },
+                    "voteResult": {
+                        "type": "object",
+                        "nullable": true
+                    },
+                    "speakerListId": {
+                        "type": "integer",
+                        "nullable": true
+                    },
+                    "createdAt": {
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "updatedAt": {
+                        "type": "string",
+                        "format": "date-time"
+                    }
+                }
+            },
+            "AddSpeakerRequest": {
+                "type": "object",
+                "required": [
+                    "speakerListId",
+                    "delegateId"
+                ],
+                "properties": {
+                    "speakerListId": {
+                        "type": "integer",
+                        "description": "Speaker list ID to add to"
+                    },
+                    "delegateId": {
+                        "type": "integer",
+                        "description": "Delegate ID to add as speaker"
+                    }
+                }
+            },
+            "RollCallRequest": {
+                "type": "object",
+                "required": [
+                    "committeeId",
+                    "attendance"
+                ],
+                "properties": {
+                    "committeeId": {
+                        "type": "integer",
+                        "description": "Committee ID for roll call"
+                    },
+                    "attendance": {
+                        "type": "object",
+                        "description": "Map of delegateId to status (present/absent)",
+                        "additionalProperties": {
+                            "type": "string",
+                            "enum": [
+                                "present",
+                                "absent"
+                            ]
+                        }
+                    }
+                }
+            },
+            "CreateMotionRequest": {
+                "type": "object",
+                "required": [
+                    "motionType"
+                ],
+                "properties": {
+                    "sessionId": {
+                        "type": "integer",
+                        "nullable": true,
+                        "description": "Session ID (optional if committeeId provided)"
+                    },
+                    "committeeId": {
+                        "type": "integer",
+                        "nullable": true,
+                        "description": "Committee ID (used if sessionId not provided)"
+                    },
+                    "motionType": {
+                        "type": "string",
+                        "enum": [
+                            "open_main_list",
+                            "close_main_list",
+                            "set_speaking_time",
+                            "moderated_caucus",
+                            "unmoderated_caucus",
+                            "introduce_draft_resolution",
+                            "introduce_amendment",
+                            "vote_on_draft_resolution",
+                            "vote_on_amendment",
+                            "consultation_of_the_whole",
+                            "roll_call_vote",
+                            "adjourn_meeting"
+                        ],
+                        "description": "Type of motion - must be one of the 12 defined motion types"
+                    },
+                    "proposerId": {
+                        "type": "integer",
+                        "nullable": true,
+                        "description": "Delegate ID who proposed the motion"
+                    },
+                    "fileId": {
+                        "type": "integer",
+                        "nullable": true,
+                        "description": "Associated file ID"
+                    },
+                    "unitTimeSeconds": {
+                        "type": "integer",
+                        "nullable": true,
+                        "description": "Unit time in seconds"
+                    },
+                    "totalTimeSeconds": {
+                        "type": "integer",
+                        "nullable": true,
+                        "description": "Total time in seconds"
+                    },
+                    "voteRequired": {
+                        "type": "boolean",
+                        "default": false
+                    },
+                    "vetoApplicable": {
+                        "type": "boolean",
+                        "default": false
+                    },
+                    "state": {
+                        "type": "string",
+                        "enum": [
+                            "passed",
+                            "rejected",
+                            "pending"
+                        ],
+                        "default": "pending"
+                    },
+                    "voteResult": {
+                        "type": "object",
+                        "nullable": true,
+                        "description": "Vote result data"
+                    }
+                }
+            },
+            "UpdateSpeakerListRequest": {
+                "type": "object",
+                "required": [
+                    "entries"
+                ],
+                "properties": {
+                    "entries": {
+                        "type": "array",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "id": {
+                                    "type": "integer",
+                                    "description": "Speaker list entry ID"
+                                },
+                                "position": {
+                                    "type": "integer",
+                                    "nullable": true,
+                                    "description": "New position in queue"
+                                },
+                                "status": {
+                                    "type": "string",
+                                    "enum": [
+                                        "waiting",
+                                        "speaking",
+                                        "removed"
+                                    ],
+                                    "nullable": true,
+                                    "description": "New status"
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "Motion": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "integer"
+                    },
+                    "sessionId": {
+                        "type": "integer",
+                        "nullable": true
+                    },
+                    "motionType": {
+                        "type": "string",
+                        "enum": [
+                            "open_main_list",
+                            "close_main_list",
+                            "set_speaking_time",
+                            "moderated_caucus",
+                            "unmoderated_caucus",
+                            "introduce_draft_resolution",
+                            "introduce_amendment",
+                            "vote_on_draft_resolution",
+                            "vote_on_amendment",
+                            "consultation_of_the_whole",
+                            "roll_call_vote",
+                            "adjourn_meeting"
+                        ]
+                    },
+                    "proposerId": {
+                        "type": "integer",
+                        "nullable": true
+                    },
+                    "fileId": {
+                        "type": "integer",
+                        "nullable": true
+                    },
+                    "unitTimeSeconds": {
+                        "type": "integer",
+                        "nullable": true
+                    },
+                    "totalTimeSeconds": {
+                        "type": "integer",
+                        "nullable": true
+                    },
+                    "speakerListId": {
+                        "type": "integer",
+                        "nullable": true
+                    },
+                    "voteRequired": {
+                        "type": "boolean"
+                    },
+                    "vetoApplicable": {
+                        "type": "boolean"
+                    },
+                    "state": {
+                        "type": "string",
+                        "enum": [
+                            "passed",
+                            "rejected",
+                            "pending"
+                        ]
+                    },
+                    "voteResult": {
+                        "type": "object",
+                        "nullable": true
+                    },
+                    "createdAt": {
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "updatedAt": {
+                        "type": "string",
+                        "format": "date-time"
+                    }
+                }
+            },
+            "SpeakerList": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "integer"
+                    },
+                    "committeeId": {
+                        "type": "integer"
+                    },
+                    "entries": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/SpeakerListEntry"
+                        }
+                    }
+                }
+            },
+            "SpeakerListEntry": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "integer"
+                    },
+                    "speakerListId": {
+                        "type": "integer"
+                    },
+                    "delegateId": {
+                        "type": "integer"
+                    },
+                    "country": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "delegateName": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "position": {
+                        "type": "integer"
+                    },
+                    "status": {
+                        "type": "string",
+                        "enum": [
+                            "waiting",
+                            "speaking",
+                            "removed"
+                        ]
+                    },
+                    "createdAt": {
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "updatedAt": {
+                        "type": "string",
+                        "format": "date-time"
+                    }
+                }
+            },
+            "Error": {
+                "type": "object",
+                "properties": {
+                    "error": {
+                        "type": "string"
+                    }
+                }
+            }
+        },
+        "responses": {
+            "BadRequest": {
+                "description": "Bad request",
+                "content": {
+                    "application/json": {
+                        "schema": {
+                            "$ref": "#/components/schemas/Error"
+                        }
+                    }
+                }
+            },
+            "Unauthorized": {
+                "description": "Unauthorized",
+                "content": {
+                    "application/json": {
+                        "schema": {
+                            "$ref": "#/components/schemas/Error"
+                        }
+                    }
+                }
+            },
+            "NotFound": {
+                "description": "Resource not found",
+                "content": {
+                    "application/json": {
+                        "schema": {
+                            "$ref": "#/components/schemas/Error"
+                        }
+                    }
+                }
+            }
+        },
+        "securitySchemes": {
+            "bearerAuth": {
+                "type": "http",
+                "scheme": "bearer",
+                "description": "JWT token from login or session cookie"
+            }
+        }
+    }
+}

@@ -112,6 +112,10 @@ class Committee extends Model
 
     public function setTimeConfig(?array $config): void
     {
+        if ($config) {
+            // 自动添加 updateTime
+            $config['updateTime'] = Carbon::now()->toIso8601String();
+        }
         $this->time_config = $config ? json_encode($config, JSON_UNESCAPED_UNICODE) : null;
     }
 

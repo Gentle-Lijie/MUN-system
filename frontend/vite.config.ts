@@ -20,5 +20,6 @@ export default defineConfig({
         changeOrigin: true,
       },
     },
+    allowedHosts: ['.localhost', '.localdomain', 'zlj.hnrobert.space'],
   },
 })

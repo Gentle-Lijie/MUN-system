@@ -22,8 +22,6 @@ DROP TABLE IF EXISTS Motions;
 
 DROP TABLE IF EXISTS SpeakerListEntries;
 
-DROP TABLE IF EXISTS Sessions;
-
 DROP TABLE IF EXISTS CommitteeSessions;
 
 DROP TABLE IF EXISTS SpeakerLists;
@@ -115,29 +113,8 @@ CREATE TABLE
         FOREIGN KEY (committee_id) REFERENCES Committees (id)
     );
 
-CREATE TABLE
-    Sessions (
-        id INT AUTO_INCREMENT PRIMARY KEY,
-        committee_id INT NOT NULL,
-        type ENUM (
-            'main_list',
-            'moderated',
-            'unmoderated',
-            'special',
-            'other'
-        ) NOT NULL,
-        unit_time_seconds INT,
-        total_time_seconds INT,
-        proposer_id INT,
-        is_approved BOOLEAN DEFAULT FALSE,
-        vote_result JSON, -- Structured vote tally data
-        speaker_list_id INT,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-        FOREIGN KEY (committee_id) REFERENCES Committees (id),
-        FOREIGN KEY (proposer_id) REFERENCES Delegates (id),
-        FOREIGN KEY (speaker_list_id) REFERENCES SpeakerLists (id)
-    );
+-- Sessions table has been replaced by CommitteeSessions
+-- and motion tracking is now done via Motions table
 
 CREATE TABLE
     CommitteeSessions (
@@ -147,9 +124,11 @@ CREATE TABLE
         chair VARCHAR(255),
         start_time DATETIME,
         duration_minutes INT DEFAULT 20,
+        current_speaker_list_id INT DEFAULT NULL,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-        FOREIGN KEY (committee_id) REFERENCES Committees (id)
+        FOREIGN KEY (committee_id) REFERENCES Committees (id),
+        FOREIGN KEY (current_speaker_list_id) REFERENCES SpeakerLists (id) ON DELETE SET NULL
     );
 
 CREATE TABLE
@@ -201,22 +180,36 @@ CREATE TABLE
 CREATE TABLE
     Motions (
         id INT AUTO_INCREMENT PRIMARY KEY,
-        session_id INT,
-        motion_type VARCHAR(100) NOT NULL, -- e.g., 'open_speaker_list', 'suspension'
+        committee_session_id INT NOT NULL,
+        motion_type ENUM(
+            'open_main_list',
+            'moderate_caucus',
+            'unmoderated_caucus',
+            'unmoderated_debate',
+            'right_of_query',
+            'begin_special_state',
+            'end_special_state',
+            'adjourn_meeting',
+            'document_reading',
+            'personal_speech',
+            'vote',
+            'right_of_reply'
+        ) NOT NULL,
         proposer_id INT,
         file_id INT,
         unit_time_seconds INT,
         total_time_seconds INT,
-        speakerList INT DEFAULT null,
+        speaker_list_id INT DEFAULT null,
         vote_required BOOLEAN DEFAULT FALSE,
         veto_applicable BOOLEAN DEFAULT FALSE,
         state ENUM ('passed', 'rejected', 'pending') DEFAULT 'pending',
         vote_result JSON,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-        FOREIGN KEY (session_id) REFERENCES Sessions (id),
-        FOREIGN KEY (proposer_id) REFERENCES Delegates (id),
-        FOREIGN KEY (file_id) REFERENCES Files (id)
+        FOREIGN KEY (committee_session_id) REFERENCES CommitteeSessions (id),
+        FOREIGN KEY (proposer_id) REFERENCES Delegates (id) ON DELETE SET NULL,
+        FOREIGN KEY (file_id) REFERENCES Files (id),
+        FOREIGN KEY (speaker_list_id) REFERENCES SpeakerLists (id)
     );
 
 CREATE TABLE
@@ -290,6 +283,9 @@ CREATE TABLE
         FOREIGN KEY (actor_user_id) REFERENCES Users (id)
     );
 
+-- Add status column to Delegates table for display board functionality
+ALTER TABLE Delegates ADD COLUMN status ENUM ('present', 'absent') DEFAULT 'absent';
+
 -- Optional: Create indexes for better performance
 CREATE INDEX idx_users_email ON Users (email);
 
@@ -299,13 +295,11 @@ CREATE INDEX idx_committees_code ON Committees (code);
 
 CREATE INDEX idx_delegates_committee ON Delegates (committee_id);
 
-CREATE INDEX idx_sessions_committee ON Sessions (committee_id);
-
 CREATE INDEX idx_committee_sessions_committee ON CommitteeSessions (committee_id);
 
 CREATE INDEX idx_speaker_lists_committee ON SpeakerLists (committee_id);
 
-CREATE INDEX idx_motions_session ON Motions (session_id);
+CREATE INDEX idx_motions_committee_session ON Motions (committee_session_id);
 
 CREATE INDEX idx_votes_motion ON Votes (motion_id);
 
