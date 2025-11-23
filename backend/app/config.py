@@ -20,11 +20,11 @@ else:
 
 
 def _build_mysql_uri() -> str:
-    user = quote_plus(os.getenv('MYSQL_USER', 'mun_user'))
-    password = quote_plus(os.getenv('MYSQL_PASSWORD', 'change_me'))
+    user = quote_plus(os.getenv('MYSQL_USER', 'root'))
+    password = quote_plus(os.getenv('MYSQL_PASSWORD', '123456'))
     host = os.getenv('MYSQL_HOST', 'localhost')
     port = os.getenv('MYSQL_PORT', '3306')
-    database = os.getenv('MYSQL_DATABASE', 'mun_system')
+    database = os.getenv('MYSQL_DATABASE', 'mun')
     return f'mysql+pymysql://{user}:{password}@{host}:{port}/{database}?charset=utf8mb4'
 
 
@@ -55,3 +55,4 @@ def get_config(config_name: str | None = None) -> Type[BaseConfig]:
 
 
 __all__ = ['get_config', 'BaseConfig']
+7
