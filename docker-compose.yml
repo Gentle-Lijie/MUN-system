@@ -1,0 +1,60 @@
+services:
+  db:
+    image: mysql:8.4
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: 123456
+      MYSQL_DATABASE: mun
+      MYSQL_USER: mun_user
+      MYSQL_PASSWORD: mun_pass
+    ports:
+      - "3307:3306"
+    command: >-
+      --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
+    volumes:
+      - mysql-data:/var/lib/mysql
+    healthcheck:
+      test: [ "CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-umun_user", "-pmun_pass" ]
+      interval: 10s
+      retries: 10
+      timeout: 5s
+
+  backend:
+    build:
+      context: ./backend-php
+    env_file:
+      - .env
+    environment:
+      APP_ENV: production
+      APP_DEBUG: "0"
+      DB_CONNECTION: ${DB_CONNECTION:-mysql}
+      DB_HOST: ${DB_HOST:-db}
+      DB_PORT: ${DB_PORT:-3306}
+      DB_DATABASE: ${DB_DATABASE:-mun}
+      DB_USERNAME: ${DB_USERNAME:-mun_user}
+      DB_PASSWORD: ${DB_PASSWORD:-mun_pass}
+      CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:4173}
+    ports:
+      - "8000:80"
+    volumes:
+      - attachments-data:/var/www/html/attachments
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: ./frontend
+      args:
+        VITE_API_BASE_URL: ${VITE_API_BASE_URL:-http://localhost:8000}
+    ports:
+      - "4173:80"
+    depends_on:
+      backend:
+        condition: service_started
+    restart: unless-stopped
+
+volumes:
+  mysql-data:
+  attachments-data:

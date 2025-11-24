@@ -3,6 +3,7 @@ import { computed, onMounted, onUnmounted, ref } from 'vue'
 import { useRoute } from 'vue-router'
 import PopupDelegate from '@/components/PopupDelegate.vue'
 import PopupMotion from '@/components/PopupMotion.vue'
+import { API_BASE } from '@/services/api'
 
 const route = useRoute()
 const committeeId = computed(() => route.params.committeeId as string)
@@ -22,6 +23,12 @@ const rollCallAttendance = ref<Record<string, 'present' | 'absent'>>({})
 const speakerListId = ref<string | null>(null)
 const speakerListCurrentIndex = ref(0)
 const speakerListTotalCount = ref(0)
+
+const apiFetch = (path: string, options: RequestInit = {}) =>
+    fetch(`${API_BASE}${path}`, {
+        credentials: 'include',
+        ...options,
+    })
 
 // 计时器状态
 const timerRunning = ref(false)
@@ -88,9 +95,7 @@ const stopTimeUpdate = () => {
 // 加载大屏数据
 const loadBoardData = async () => {
     try {
-        const response = await fetch(`http://localhost:8000/api/display/board?committeeId=${committeeId.value}`, {
-            credentials: 'include'
-        })
+        const response = await apiFetch(`/api/display/board?committeeId=${committeeId.value}`)
         if (!response.ok) throw new Error('Failed to load board data')
 
         const data = await response.json()
@@ -128,9 +133,7 @@ const loadBoardData = async () => {
 // 加载代表列表（用于点名）
 const loadDelegates = async () => {
     try {
-        const response = await fetch(`http://localhost:8000/api/venues/${committeeId.value}/delegate`, {
-            credentials: 'include'
-        })
+        const response = await apiFetch(`/api/venues/${committeeId.value}/delegate`)
         if (!response.ok) throw new Error('Failed to load delegates')
 
         const data = await response.json()
@@ -148,10 +151,9 @@ const loadDelegates = async () => {
 // 开始会议
 const startSession = async () => {
     try {
-        const response = await fetch('http://localhost:8000/api/display/start-session', {
+        const response = await apiFetch('/api/display/start-session', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            credentials: 'include',
             body: JSON.stringify({ committeeId: committeeId.value })
         })
 
@@ -172,10 +174,9 @@ const startSession = async () => {
 // 提交点名结果
 const submitRollCall = async () => {
     try {
-        const response = await fetch('http://localhost:8000/api/display/roll-call', {
+        const response = await apiFetch('/api/display/roll-call', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            credentials: 'include',
             body: JSON.stringify({
                 committeeId: committeeId.value,
                 attendance: rollCallAttendance.value
@@ -204,10 +205,9 @@ const onDelegateConfirm = async (delegate?: any) => {
 
     console.log('Sending POST request to add speaker...')
     try {
-        const response = await fetch('http://localhost:8000/api/display/speakers', {
+        const response = await apiFetch('/api/display/speakers', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            credentials: 'include',
             body: JSON.stringify({
                 speakerListId: speakerListId.value,
                 delegateId: delegate.id
@@ -243,10 +243,9 @@ const switchSpeakerList = async (direction: 'prev' | 'next') => {
         // 如果当前发言列表为空，先删除它
         const deleteEmpty = speakerQueue.value.length === 0 && speakerListId.value
 
-        const response = await fetch('http://localhost:8000/api/display/switch-speaker-list', {
+        const response = await apiFetch('/api/display/switch-speaker-list', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            credentials: 'include',
             body: JSON.stringify({
                 committeeId: committeeId.value,
                 direction,
@@ -289,10 +288,9 @@ const handleMotionPass = async ({ motion, form }: MotionSubmission) => {
         const motionType = motionTypeMap[motion.id] || motion.id
 
         // 调用后端API创建动议
-        const response = await fetch('http://localhost:8000/api/motions', {
+        const response = await apiFetch('/api/motions', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            credentials: 'include',
             body: JSON.stringify({
                 committeeId: committeeId.value,
                 motionType: motionType,
@@ -366,10 +364,9 @@ const handleMotionFail = async ({ motion, form }: MotionSubmission) => {
         const motionType = motionTypeMap[motion.id] || motion.id
 
         // 调用后端API创建动议
-        const response = await fetch('http://localhost:8000/api/motions', {
+        const response = await apiFetch('/api/motions', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            credentials: 'include',
             body: JSON.stringify({
                 committeeId: committeeId.value,
                 motionType: motionType,
@@ -417,10 +414,9 @@ const startTimer = async () => {
     }
 
     try {
-        const response = await fetch('http://localhost:8000/api/display/timer/start', {
+        const response = await apiFetch('/api/display/timer/start', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            credentials: 'include',
             body: JSON.stringify({ speakerListId: speakerListId.value })
         })
 
@@ -452,10 +448,9 @@ const stopTimer = async () => {
     if (!speakerListId.value) return
 
     try {
-        const response = await fetch('http://localhost:8000/api/display/timer/stop', {
+        const response = await apiFetch('/api/display/timer/stop', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            credentials: 'include',
             body: JSON.stringify({ speakerListId: speakerListId.value })
         })
 
@@ -487,10 +482,9 @@ const nextSpeaker = async () => {
     }
 
     try {
-        const response = await fetch('http://localhost:8000/api/display/speaker/next', {
+        const response = await apiFetch('/api/display/speaker/next', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            credentials: 'include',
             body: JSON.stringify({ speakerListId: speakerListId.value })
         })
 

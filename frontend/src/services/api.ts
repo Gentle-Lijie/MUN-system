@@ -1,4 +1,7 @@
-export const API_BASE = 'http://localhost:8000' // Adjust to your backend URL
+const envApiBase = import.meta.env?.VITE_API_BASE_URL
+const browserOrigin = typeof window !== 'undefined' ? window.location.origin : ''
+const normalizedBase = (envApiBase && envApiBase.trim().length > 0 ? envApiBase : browserOrigin).replace(/\/$/, '')
+export const API_BASE = import.meta.env.DEV ? '' : normalizedBase
 
 export interface ApiResponse<T> {
     data?: T

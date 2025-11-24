@@ -156,6 +156,7 @@
 <script setup lang="ts">
 import { computed, reactive, ref, watch } from 'vue'
 import PopupFileSelect from '@/components/PopupFileSelect.vue'
+import { API_BASE } from '@/services/api'
 import type { FileReference } from '@/services/api'
 
 type MotionField = 'country' | 'unitTime' | 'totalTime'
@@ -290,7 +291,7 @@ const activeMotion = computed(() => motions.find((motion) => motion.id === selec
 const loadDelegates = async () => {
     if (!props.committeeId) return
     try {
-        const response = await fetch(`http://localhost:8000/api/venues/${props.committeeId}/delegate`, {
+        const response = await fetch(`${API_BASE}/api/venues/${props.committeeId}/delegate`, {
             credentials: 'include'
         })
         if (!response.ok) throw new Error('Failed to load delegates')

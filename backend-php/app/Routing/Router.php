@@ -83,7 +83,9 @@ class Router
 
         $httpMethod = $request->getMethod();
         $uri = rawurldecode($request->getPathInfo());
+        error_log("Dispatching: $httpMethod $uri");
         $routeInfo = $this->dispatcher->dispatch($httpMethod, $uri);
+        error_log("Route info: " . json_encode($routeInfo));
 
         return match ($routeInfo[0]) {
             Dispatcher::NOT_FOUND => throw new HttpException('Not Found', 404),

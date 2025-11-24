@@ -24,6 +24,7 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import PopupDelegate from '@/components/PopupDelegate.vue'
+import { API_BASE } from '@/services/api'
 
 const showPopupDelegate = ref(false)
 const speakerListId = ref('9')
@@ -45,7 +46,7 @@ function handleConfirm(delegate: any) {
     }
 
     console.log('准备发送 POST 请求...')
-    fetch('http://localhost:8000/api/display/speakers', {
+    fetch(`${API_BASE}/api/display/speakers`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

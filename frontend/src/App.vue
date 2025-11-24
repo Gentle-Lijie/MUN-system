@@ -9,7 +9,7 @@ type UserProfile = {
 
 const navItems = [
   { label: '欢迎', to: '/welcome' },
-  { label: '会议管理', to: '/management' },
+  // { label: '会议管理', to: '/management' },
   { label: '后台功能', to: '/backend' },
   { label: '会场小窗口', to: '/mini-window' },
 ]

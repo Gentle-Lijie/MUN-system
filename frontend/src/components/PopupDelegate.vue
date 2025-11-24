@@ -21,6 +21,7 @@
 
 <script setup lang="ts">
 import { ref, computed, defineProps, defineEmits, watch } from 'vue'
+import { API_BASE } from '@/services/api'
 
 const props = defineProps<{ modelValue: boolean; committeeId?: string }>()
 const emit = defineEmits(['update:modelValue', 'confirm'])
@@ -51,7 +52,7 @@ watch(() => props.modelValue, async (isOpen) => {
     search.value = ''
 
     try {
-        const url = `http://localhost:8000/api/venues/${props.committeeId}/delegate`
+        const url = `${API_BASE}/api/venues/${props.committeeId}/delegate`
         console.log('Fetching delegates from:', url)
         const response = await fetch(url, {
             credentials: 'include'
