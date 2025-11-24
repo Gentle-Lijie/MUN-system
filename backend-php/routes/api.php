@@ -70,6 +70,7 @@ return static function (Router $router): void {
     $router->post('/api/crises', [CrisisController::class, 'store']);
     $router->patch('/api/crises/{crisisId:\\d+}', [CrisisController::class, 'update']);
     $router->get('/api/crises/{crisisId:\\d+}/responses', [CrisisController::class, 'responses']);
+    $router->get('/api/crises/{crisisId:\\d+}/responses/export', [CrisisController::class, 'exportResponses']);
     $router->post('/api/crises/{crisisId:\\d+}/responses', [CrisisController::class, 'storeResponse']);
     // Serve attachments uploaded to the attachments directory (safe handling in controller)
     $router->get('/attachments/{filename:.+}', [AttachmentController::class, 'serve']);

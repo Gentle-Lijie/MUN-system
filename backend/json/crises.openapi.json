@@ -251,15 +251,7 @@
                                 "properties": {
                                     "summary": {
                                         "type": "string",
-                                        "description": "Situation assessment"
-                                    },
-                                    "actions": {
-                                        "type": "string",
-                                        "nullable": true
-                                    },
-                                    "resources": {
-                                        "type": "string",
-                                        "nullable": true
+                                        "description": "Feedback content"
                                     },
                                     "file_path": {
                                         "type": "string",
@@ -278,6 +270,38 @@
                             "application/json": {
                                 "schema": {
                                     "$ref": "#/components/schemas/CrisisResponse"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/api/crises/{crisisId}/responses/export": {
+            "get": {
+                "summary": "Export delegate responses as CSV (presidium)",
+                "parameters": [
+                    {
+                        "name": "crisisId",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "CSV file download",
+                        "content": {
+                            "text/csv": {
+                                "schema": {
+                                    "type": "string"
                                 }
                             }
                         }
@@ -400,14 +424,6 @@
                         "type": "object",
                         "properties": {
                             "summary": {
-                                "type": "string",
-                                "nullable": true
-                            },
-                            "actions": {
-                                "type": "string",
-                                "nullable": true
-                            },
-                            "resources": {
                                 "type": "string",
                                 "nullable": true
                             }

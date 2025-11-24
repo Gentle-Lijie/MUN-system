@@ -22,8 +22,10 @@ const form = reactive({
 const responseModal = reactive({
   open: false,
   loading: false,
+  crisisId: 0,
   crisisTitle: '',
   items: [] as CrisisResponseItem[],
+  search: '',
 })
 
 const statusLabels: Record<CrisisStatus, string> = {
@@ -40,11 +42,14 @@ const statusClass: Record<CrisisStatus, string> = {
   archived: 'badge-ghost',
 }
 
-const committeeLookup = computed(() => {
-  return venues.value.reduce<Record<number, Venue>>((map, committee) => {
-    map[committee.id] = committee
-    return map
-  }, {})
+const filteredItems = computed(() => {
+  if (!responseModal.search.trim()) return responseModal.items
+  const search = responseModal.search.toLowerCase()
+  return responseModal.items.filter(item =>
+    item.user?.name?.toLowerCase().includes(search) ||
+    item.committee?.name?.toLowerCase().includes(search) ||
+    item.country?.toLowerCase().includes(search)
+  )
 })
 
 const filteredCrises = computed(() => {
@@ -141,8 +146,10 @@ const saveCrisis = async () => {
 const openResponseModal = async (crisis: Crisis) => {
   responseModal.open = true
   responseModal.loading = true
+  responseModal.crisisId = crisis.id
   responseModal.crisisTitle = crisis.title
   responseModal.items = []
+  responseModal.search = ''
   try {
     const result = await api.getCrisisResponses(crisis.id)
     responseModal.items = result.items
@@ -157,6 +164,22 @@ const openResponseModal = async (crisis: Crisis) => {
 const closeResponseModal = () => {
   responseModal.open = false
 }
+
+const exportResponses = () => {
+  const link = document.createElement('a')
+  link.href = `${API_BASE}/api/crises/${responseModal.crisisId}/responses/export`
+  link.download = `crisis_responses_${responseModal.crisisId}.csv`
+  document.body.appendChild(link)
+  link.click()
+  document.body.removeChild(link)
+}
+
+const committeeLookup = computed(() => {
+  return venues.value.reduce<Record<number, Venue>>((map, committee) => {
+    map[committee.id] = committee
+    return map
+  }, {})
+})
 
 const targetLabel = (ids: number[] | null) => {
   if (!ids || ids.length === 0) return ['全部委员会']
@@ -201,11 +224,8 @@ onMounted(() => {
         </div>
         <p v-else-if="filteredCrises.length === 0" class="text-center text-base-content/60 py-10">暂无危机记录</p>
 
-        <article
-          v-for="crisis in filteredCrises"
-          :key="crisis.id"
-          class="border border-base-200 rounded-2xl p-4 space-y-3"
-        >
+        <article v-for="crisis in filteredCrises" :key="crisis.id"
+          class="border border-base-200 rounded-2xl p-4 space-y-3">
           <div class="flex items-start justify-between gap-4">
             <div class="space-y-1">
               <div class="flex items-center gap-2">
@@ -220,15 +240,13 @@ onMounted(() => {
                 <span v-if="crisis.publishedBy"> · {{ crisis.publishedBy.name }}</span>
               </p>
               <div class="flex flex-wrap gap-2 text-xs text-base-content/70">
-                <span
-                  class="badge badge-outline"
-                  v-for="(label, idx) in targetLabel(crisis.targetCommittees)"
-                  :key="`${crisis.id}-${idx}`"
-                >{{ label }}</span>
+                <span class="badge badge-outline" v-for="(label, idx) in targetLabel(crisis.targetCommittees)"
+                  :key="`${crisis.id}-${idx}`">{{ label }}</span>
               </div>
             </div>
             <div class="flex flex-col gap-2">
-              <button class="btn btn-xs btn-outline" @click="openResponseModal(crisis)" :disabled="crisis.responsesCount === 0">
+              <button class="btn btn-xs btn-outline" @click="openResponseModal(crisis)"
+                :disabled="crisis.responsesCount === 0">
                 查看反馈 ({{ crisis.responsesCount }})
               </button>
               <button class="btn btn-xs btn-secondary" @click="startEdit(crisis)">编辑</button>
@@ -236,19 +254,14 @@ onMounted(() => {
           </div>
           <p class="text-sm leading-relaxed whitespace-pre-line">{{ crisis.content }}</p>
           <div class="flex flex-wrap gap-3 items-center text-sm">
-            <a
-              v-if="crisis.filePath"
-              class="link link-primary"
-              :href="`${API_BASE}${crisis.filePath}`"
-              target="_blank"
-              rel="noopener"
-            >查看附件</a>
+            <a v-if="crisis.filePath" class="link link-primary" :href="`${API_BASE}${crisis.filePath}`" target="_blank"
+              rel="noopener">查看附件</a>
             <span class="text-base-content/60">回应数：{{ crisis.responsesCount }}</span>
           </div>
         </article>
       </div>
 
-      <form class="border border-base-200 rounded-2xl p-4 space-y-4" @submit.prevent="saveCrisis">
+      <form class="border border-base-200 rounded-2xl space-y-4" @submit.prevent="saveCrisis">
         <div class="flex items-center justify-between">
           <h3 class="font-semibold">{{ editingId ? '编辑危机' : '发布危机' }}</h3>
           <button v-if="editingId" type="button" class="btn btn-xs btn-ghost" @click="resetForm">新建</button>
@@ -259,12 +272,14 @@ onMounted(() => {
         </label>
         <label class="form-control">
           <span class="label-text">危机详情</span>
-          <textarea v-model="form.content" class="textarea textarea-bordered" rows="5" placeholder="描述背景、任务目标、时间线" required></textarea>
+          <textarea v-model="form.content" class="textarea textarea-bordered" rows="5" placeholder="描述背景、任务目标、时间线"
+            required></textarea>
         </label>
         <label class="form-control">
           <span class="label-text">面向委员会</span>
           <select v-model="form.targetCommittees" class="select select-bordered h-32" multiple>
-            <option v-for="venue in venues" :key="venue.id" :value="venue.id">{{ venue.name }} ({{ venue.code }})</option>
+            <option v-for="venue in venues" :key="venue.id" :value="venue.id">{{ venue.name }} ({{ venue.code }})
+            </option>
           </select>
           <span class="label-text-alt text-base-content/60">不选择则默认推送至全部委员会</span>
         </label>
@@ -297,15 +312,22 @@ onMounted(() => {
       </form>
     </section>
 
-    <dialog v-if="responseModal.open" class="modal" open>
+    <dialog v-if="responseModal.open" class="modal !mt-0" open>
       <div class="modal-box max-w-4xl">
         <h3 class="font-semibold text-lg mb-3">{{ responseModal.crisisTitle }} · 反馈列表</h3>
+        <div class="flex gap-3 mb-4">
+          <input v-model="responseModal.search" type="text" placeholder="搜索代表姓名、委员会或国家"
+            class="input input-bordered flex-1" />
+          <button class="btn btn-outline" @click="exportResponses"
+            :disabled="responseModal.items.length === 0">导出CSV</button>
+        </div>
         <div class="min-h-40">
           <div v-if="responseModal.loading" class="flex justify-center py-10">
             <span class="loading loading-spinner loading-lg"></span>
           </div>
           <div v-else>
-            <div v-if="responseModal.items.length === 0" class="text-base-content/60 text-center py-6">尚无反馈</div>
+            <div v-if="filteredItems.length === 0" class="text-base-content/60 text-center py-6">{{ responseModal.search
+              ? '无匹配结果' : '尚无反馈' }}</div>
             <div v-else class="overflow-x-auto">
               <table class="table table-sm">
                 <thead>
@@ -313,20 +335,16 @@ onMounted(() => {
                     <th>代表</th>
                     <th>所属委员会</th>
                     <th>国家/身份</th>
-                    <th>局势评估</th>
-                    <th>行动计划</th>
-                    <th>所需资源</th>
+                    <th>反馈</th>
                     <th>时间</th>
                   </tr>
                 </thead>
                 <tbody>
-                  <tr v-for="item in responseModal.items" :key="item.id">
+                  <tr v-for="item in filteredItems" :key="item.id">
                     <td>{{ item.user?.name || '—' }}</td>
                     <td>{{ item.committee?.name || '—' }}</td>
                     <td>{{ item.country || '—' }}</td>
                     <td class="whitespace-pre-line">{{ item.content.summary || '—' }}</td>
-                    <td class="whitespace-pre-line">{{ item.content.actions || '—' }}</td>
-                    <td class="whitespace-pre-line">{{ item.content.resources || '—' }}</td>
                     <td class="whitespace-nowrap">
                       <div>{{ item.createdAt ? new Date(item.createdAt).toLocaleString() : '—' }}</div>
                       <a v-if="item.filePath" :href="`${API_BASE}${item.filePath}`" target="_blank" class="link">附件</a>

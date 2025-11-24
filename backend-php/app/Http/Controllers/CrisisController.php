@@ -12,6 +12,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Carbon;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
+use Symfony\Component\HttpFoundation\Response;
 
 class CrisisController extends Controller
 {
@@ -80,7 +81,7 @@ class CrisisController extends Controller
             'file_path' => $data['file_path'] ?? null,
             'target_committees' => $data['target_committees'] ?? null,
             'status' => $data['status'] ?? 'active',
-            'responses_allowed' => $data['responses_allowed'] ?? false,
+            'responses_allowed' => $data['responses_allowed'] ?? true,
             'published_by' => $publisher->id,
             'published_at' => Carbon::now('UTC'),
         ]);
@@ -108,17 +109,56 @@ class CrisisController extends Controller
     public function responses(Request $request, array $params): JsonResponse
     {
         AuthSupport::requirePresidium($this->app, $request);
-        $crisis = Crisis::with('publisher')->findOrFail((int) $params['crisisId']);
+        $crisis = Crisis::findOrFail((int) $params['crisisId']);
         $responses = CrisisResponse::query()
             ->with(['user.delegates.committee'])
             ->where('crisis_id', $crisis->id)
             ->orderByDesc('created_at')
             ->get();
 
+        $items = $responses->map(function (CrisisResponse $response) {
+            return $this->responseToArray($response);
+        })->toArray();
+
         return $this->json([
             'crisis' => $this->crisisToApiResponse($crisis),
-            'items' => $responses->map(fn (CrisisResponse $response) => $this->responseToArray($response))->all(),
-            'total' => $responses->count(),
+            'items' => $items,
+            'total' => count($items),
+        ]);
+    }
+
+    public function exportResponses(Request $request, array $params): Response
+    {
+        AuthSupport::requirePresidium($this->app, $request);
+        $crisis = Crisis::findOrFail((int) $params['crisisId']);
+        $responses = CrisisResponse::query()
+            ->with(['user.delegates.committee'])
+            ->where('crisis_id', $crisis->id)
+            ->orderByDesc('created_at')
+            ->get();
+
+        $csv = "代表姓名,委员会,国家,反馈,提交时间\n";
+        foreach ($responses as $response) {
+            $user = $response->user;
+            $delegate = $user?->delegates->first();
+            $committee = $delegate?->committee;
+            $content = $response->content ?? [];
+            $summary = $content['summary'] ?? '';
+            $createdAt = $response->created_at ? $response->created_at->toDateTimeString() : '';
+
+            $csv .= sprintf(
+                "\"%s\",\"%s\",\"%s\",\"%s\",\"%s\"\n",
+                $user?->name ?? '',
+                $committee?->name ?? '',
+                $delegate?->country ?? '',
+                str_replace('"', '""', $summary),
+                $createdAt
+            );
+        }
+
+        return new Response($csv, 200, [
+            'Content-Type' => 'text/csv; charset=utf-8',
+            'Content-Disposition' => 'attachment; filename="crisis_responses_' . $crisis->id . '.csv"',
         ]);
     }
 
@@ -131,12 +171,8 @@ class CrisisController extends Controller
             throw new HttpException('当前危机未开放反馈通道', 400);
         }
 
-        if ($this->userHasPresidiumPrivileges($user)) {
-            throw new HttpException('主席团成员无需提交反馈', 403);
-        }
-
         $committeeId = $this->getUserCommitteeId($user);
-        if (!$this->crisisAcceptsCommittee($crisis, $committeeId)) {
+        if (!$this->userHasPresidiumPrivileges($user) && !$this->crisisAcceptsCommittee($crisis, $committeeId)) {
             throw new HttpException('该危机未面向当前委员会', 403);
         }
 
@@ -150,8 +186,6 @@ class CrisisController extends Controller
             [
                 'content' => [
                     'summary' => $payload['summary'],
-                    'actions' => $payload['actions'] ?? null,
-                    'resources' => $payload['resources'] ?? null,
                 ],
                 'file_path' => $payload['file_path'] ?? null,
             ]
@@ -188,10 +222,7 @@ class CrisisController extends Controller
         ];
 
         if ($viewer) {
-            $response['canRespond'] = !$this->userHasPresidiumPrivileges($viewer)
-                && $this->crisisAcceptsCommittee($crisis, $committeeId)
-                && $crisis->responses_allowed
-                && $crisis->status === 'active';
+            $response['canRespond'] = (bool) $crisis->responses_allowed;
         }
 
         if ($myResponse) {
@@ -227,8 +258,6 @@ class CrisisController extends Controller
             'country' => $delegate?->country,
             'content' => [
                 'summary' => $content['summary'] ?? null,
-                'actions' => $content['actions'] ?? null,
-                'resources' => $content['resources'] ?? null,
             ],
             'filePath' => $response->file_path,
             'createdAt' => $response->created_at ? $response->created_at->toIso8601String() : null,
@@ -308,20 +337,14 @@ class CrisisController extends Controller
         return $data;
     }
 
-    /**
-     * @return array<string, mixed>
-     */
     private function validateResponsePayload(array $body): array
     {
         if (!isset($body['summary']) || !is_string($body['summary']) || trim($body['summary']) === '') {
-            throw new HttpException('请填写局势评估', 400);
+            throw new HttpException('请填写反馈', 400);
         }
         $maxLength = 2000;
-        $fields = ['summary', 'actions', 'resources'];
-        foreach ($fields as $field) {
-            if (isset($body[$field]) && (!is_string($body[$field]) || mb_strlen($body[$field]) > $maxLength)) {
-                throw new HttpException($field . ' 字段长度需小于2000字符', 400);
-            }
+        if (mb_strlen($body['summary']) > $maxLength) {
+            throw new HttpException('反馈长度需小于2000字符', 400);
         }
         if (array_key_exists('file_path', $body) && $body['file_path'] !== null) {
             if (!is_string($body['file_path']) || mb_strlen($body['file_path']) > 500) {
@@ -330,14 +353,12 @@ class CrisisController extends Controller
         }
 
         $summary = trim($body['summary']);
-        $actions = isset($body['actions']) ? trim((string) $body['actions']) : null;
-        $resources = isset($body['resources']) ? trim((string) $body['resources']) : null;
         $filePath = $body['file_path'] ?? null;
 
         return [
             'summary' => $summary,
-            'actions' => $actions === '' ? null : $actions,
-            'resources' => $resources === '' ? null : $resources,
+            'actions' => null,
+            'resources' => null,
             'file_path' => ($filePath === '' ? null : $filePath),
         ];
     }

@@ -5,17 +5,10 @@ import { api, API_BASE, type Crisis } from '@/services/api'
 const crises = ref<Crisis[]>([])
 const loading = ref(false)
 const submitting = ref(false)
-<<<<<<< HEAD
-// be permissive about id type — backend JSON may represent ids as number or string
-const selectedId = ref<number | string | null>(null)
-=======
 const selectedId = ref<number | null>(null)
->>>>>>> 2b418dc (Add crises feature: models, controller, routes, migration, frontend views, API typings and OpenAPI spec)
 
 const form = reactive({
-  summary: '',
-  actions: '',
-  resources: '',
+  feedback: '',
   file: null as File | null,
   filePath: null as string | null,
 })
@@ -36,18 +29,14 @@ const fetchCrises = async () => {
   }
 }
 
-<<<<<<< HEAD
-// normalize to string comparison so number/string mismatches don't break computed lookup
-const currentCrisis = computed(() => crises.value.find((c) => String(c.id) === String(selectedId.value)))
-=======
 const currentCrisis = computed(() => crises.value.find((c) => c.id === selectedId.value))
->>>>>>> 2b418dc (Add crises feature: models, controller, routes, migration, frontend views, API typings and OpenAPI spec)
 
 const hydrateForm = () => {
   const response = currentCrisis.value?.myResponse
-  form.summary = response?.content.summary || ''
-  form.actions = response?.content.actions || ''
-  form.resources = response?.content.resources || ''
+  const summary = response?.content.summary || ''
+  const actions = response?.content.actions || ''
+  const resources = response?.content.resources || ''
+  form.feedback = [summary, actions, resources].filter(Boolean).join('\n\n') || ''
   form.file = null
   form.filePath = response?.filePath || null
 }
@@ -68,8 +57,8 @@ const clearAttachment = () => {
 
 const submitResponse = async () => {
   if (!currentCrisis.value) return
-  if (!form.summary.trim()) {
-    window.alert('请先填写局势评估')
+  if (!form.feedback.trim()) {
+    window.alert('请先填写反馈')
     return
   }
   if (!currentCrisis.value.canRespond) {
@@ -86,9 +75,7 @@ const submitResponse = async () => {
     }
 
     await api.submitCrisisResponse(currentCrisis.value.id, {
-      summary: form.summary.trim(),
-      actions: form.actions.trim() || undefined,
-      resources: form.resources.trim() || undefined,
+      summary: form.feedback.trim(),
       file_path: filePath ?? null,
     })
 
@@ -151,7 +138,7 @@ onMounted(fetchCrises)
             <span v-if="crisis.myResponse" class="badge badge-outline">已提交反馈</span>
           </div>
           <div v-if="crisis.myResponse" class="bg-base-200/40 rounded-xl p-3 text-sm">
-            <p class="font-medium mb-1">我的反馈摘要</p>
+            <p class="font-medium mb-1">我的反馈</p>
             <p class="text-base-content/80 whitespace-pre-line">{{ crisis.myResponse.content.summary || '（无内容）' }}</p>
           </div>
         </article>
@@ -175,16 +162,8 @@ onMounted(fetchCrises)
           {{ currentCrisis.responsesAllowed ? '允许提交反馈' : '反馈通道关闭' }}
         </p>
         <label class="form-control">
-          <span class="label-text">局势评估 *</span>
-          <textarea v-model="form.summary" class="textarea textarea-bordered" rows="4" placeholder="概述当前局势" required></textarea>
-        </label>
-        <label class="form-control">
-          <span class="label-text">行动计划</span>
-          <textarea v-model="form.actions" class="textarea textarea-bordered" rows="3" placeholder="拟采取的步骤"></textarea>
-        </label>
-        <label class="form-control">
-          <span class="label-text">所需资源</span>
-          <textarea v-model="form.resources" class="textarea textarea-bordered" rows="3" placeholder="请求的支援、物资或权限"></textarea>
+          <span class="label-text">反馈 *</span>
+          <textarea v-model="form.feedback" class="textarea textarea-bordered" rows="8" placeholder="请输入您的反馈，包括局势评估、行动计划和所需资源等" required></textarea>
         </label>
         <div class="space-y-2">
           <label class="form-control">
@@ -196,16 +175,7 @@ onMounted(fetchCrises)
             <button type="button" class="btn btn-xs btn-ghost" @click="clearAttachment">移除</button>
           </div>
         </div>
-<<<<<<< HEAD
-        <button
-          type="submit"
-          class="btn btn-primary w-full"
-          :disabled="submitting || !currentCrisis || !currentCrisis.canRespond"
-          :title="currentCrisis ? (currentCrisis.canRespond ? (submitting ? '提交中...' : '提交反馈') : '该危机当前未开放反馈') : '请先选择危机'"
-        >
-=======
-        <button type="submit" class="btn btn-primary w-full" :disabled="submitting || !currentCrisis?.canRespond">
->>>>>>> 2b418dc (Add crises feature: models, controller, routes, migration, frontend views, API typings and OpenAPI spec)
+        <button type="submit" class="btn btn-primary w-full" :disabled="submitting">
           {{ submitting ? '提交中...' : '提交反馈' }}
         </button>
         <p class="text-xs text-base-content/60">如反馈通道关闭，请联系主席团开启或更新危机状态。</p>

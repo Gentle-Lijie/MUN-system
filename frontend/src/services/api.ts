@@ -53,8 +53,6 @@ export type CrisisStatus = 'draft' | 'active' | 'resolved' | 'archived'
 
 export interface CrisisResponseContent {
     summary?: string | null
-    actions?: string | null
-    resources?: string | null
 }
 
 export interface CrisisResponseItem {
@@ -244,8 +242,6 @@ class ApiService {
 
     async submitCrisisResponse(crisisId: number, data: {
         summary: string
-        actions?: string
-        resources?: string
         file_path?: string | null
     }): Promise<CrisisResponseItem> {
         return this.request(`/api/crises/${crisisId}/responses`, {
