@@ -95,6 +95,8 @@ export type CrisisStatus = 'draft' | 'active' | 'resolved' | 'archived'
 
 export interface CrisisResponseContent {
     summary?: string | null
+    actions?: string | null
+    resources?: string | null
 }
 
 export interface CrisisResponseItem {

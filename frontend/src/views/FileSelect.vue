@@ -1,11 +1,12 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import PopupFileSelect from '@/components/PopupFileSelect.vue'
+import type { FileReference } from '@/services/api'
 
 const showFileSelect = ref(true)
 
-function handleFileSelect(file: string) {
-    console.log('Selected file:', file)
+function handleFileSelect(file: FileReference) {
+    console.log('Selected file:', file.title)
     showFileSelect.value = false
 }
 </script>

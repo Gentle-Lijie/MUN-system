@@ -156,6 +156,7 @@
 <script setup lang="ts">
 import { computed, reactive, ref, watch } from 'vue'
 import PopupFileSelect from '@/components/PopupFileSelect.vue'
+import type { FileReference } from '@/services/api'
 
 type MotionField = 'country' | 'unitTime' | 'totalTime'
 
@@ -263,7 +264,7 @@ const motions: MotionDefinition[] = [
     },
 ]
 
-const props = defineProps<{ modelValue: boolean; committeeId: string }>()
+const props = defineProps<{ modelValue: boolean; committeeId?: string }>()
 const emit = defineEmits<{
     (e: 'update:modelValue', value: boolean): void
     (e: 'pass', payload: { motion: MotionDefinition; form: MotionFormState }): void
@@ -370,8 +371,9 @@ function handleFail() {
     resetForm()
 }
 
-function handleFileSelect(file: string) {
-    formState.notes += `\n关联文件: ${file}`
+function handleFileSelect(file: FileReference) {
+    const linked = `关联文件: ${file.title}`
+    formState.notes = [formState.notes, linked].filter(Boolean).join('\n')
 }
 
 function handleClose() {

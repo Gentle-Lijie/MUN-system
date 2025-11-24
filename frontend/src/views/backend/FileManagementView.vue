@@ -84,33 +84,6 @@ const fetchVenues = async () => {
   }
 }
 
-const publishFile = async () => {
-  if (!publishForm.title || !publishForm.type || !publishForm.content_path) return
-
-  try {
-    await api.publishFile({
-      committee_id: publishForm.committee_id ? parseInt(publishForm.committee_id) : undefined,
-      type: publishForm.type,
-      title: publishForm.title,
-      description: publishForm.description || undefined,
-      content_path: publishForm.content_path,
-      visibility: publishForm.visibility,
-    })
-    await fetchPublishedFiles()
-    // Reset form
-    Object.assign(publishForm, {
-      committee_id: '',
-      type: '',
-      title: '',
-      description: '',
-      content_path: '',
-      visibility: 'committee_only',
-    })
-  } catch (error) {
-    console.error('Failed to publish file:', error)
-  }
-}
-
 const handleFileSelect = (file: FileReference) => {
   publishForm.content_path = file.title // 或者使用其他合适的字段
 }
@@ -142,13 +115,6 @@ const startEdit = (file: FileSubmission) => {
   editForm.dias_fb = file.dias_fb || ''
 }
 
-const cancelEdit = () => {
-  isEditingConfig.value = false
-  // reset edit form fields
-  editForm.title = ''
-  editForm.description = ''
-}
-
 const deleteFile = async (file: FileSubmission) => {
   if (!confirm(`确定要删除文件"${file.title}"吗？此操作不可撤销。`)) return
 
@@ -157,21 +123,6 @@ const deleteFile = async (file: FileSubmission) => {
     await fetchPublishedFiles()
   } catch (error) {
     console.error('Failed to delete file:', error)
-  }
-}
-
-const startEditConfig = () => {
-  isEditingConfig.value = true
-}
-
-const cancelEditConfig = () => {
-  isEditingConfig.value = false
-  // 重新初始化表单
-  if (selectedFile.value) {
-    configForm.type = selectedFile.value.type
-    configForm.status = selectedFile.value.status
-    configForm.visibility = selectedFile.value.visibility
-    configForm.committee_id = selectedFile.value.committee?.id.toString() || ''
   }
 }
 

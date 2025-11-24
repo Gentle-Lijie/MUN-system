@@ -5,9 +5,17 @@ use App\Support\Env;
 $driver = Env::get('DB_CONNECTION', 'mysql');
 
 if ($driver === 'sqlite') {
+    $database = Env::get('DB_DATABASE', ':memory:');
+    if ($database === ':memory:') {
+        $database = sys_get_temp_dir() . DIRECTORY_SEPARATOR . 'mun_php_tests.sqlite';
+    }
+    if ($database !== ':memory:' && !file_exists($database)) {
+        touch($database);
+    }
+
     return [
         'driver' => 'sqlite',
-        'database' => Env::get('DB_DATABASE', ':memory:'),
+        'database' => $database,
         'prefix' => '',
         'foreign_key_constraints' => true,
     ];
