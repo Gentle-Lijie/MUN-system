@@ -49,6 +49,48 @@ export interface Venue {
     capacity: number
 }
 
+export type MessageTarget = 'everyone' | 'delegate' | 'committee' | 'dias'
+
+export interface MessageRecord {
+    id: number
+    target: MessageTarget
+    targetId?: number | null
+    channel: string
+    committee?: {
+        id: number
+        name: string
+        code: string
+    } | null
+    content: string
+    time: string
+    sender?: {
+        id: number
+        name: string
+        role: string
+    } | null
+    targetMeta?: {
+        label?: string
+        committeeName?: string
+        committeeCode?: string
+        recipientName?: string
+        [key: string]: unknown
+    } | null
+}
+
+export interface MessageRecipientsPayload {
+    committees: Array<{ id: number; name: string; code: string }>
+    delegates: Array<{ delegateId: number; userId: number; name: string; committeeId: number; committeeName?: string | null; country?: string | null }>
+}
+
+export interface MessageListResponse {
+    items: MessageRecord[]
+    total: number
+    page: number
+    pageSize: number
+    recipients: MessageRecipientsPayload
+    allowedTargets: MessageTarget[]
+}
+
 export type CrisisStatus = 'draft' | 'active' | 'resolved' | 'archived'
 
 export interface CrisisResponseContent {
@@ -112,7 +154,10 @@ class ApiService {
         return response.json()
     }
 
-    // Files API
+    // Auth API
+    async getProfile(): Promise<{ id: number; name: string; email: string; role: string; organization?: string; phone?: string; last_login?: string; created_at: string; permissions: string[] }> {
+        return this.request('/api/auth/profile')
+    }
     async getFileSubmissions(params?: { status?: string; committeeId?: string; search?: string }): Promise<{ items: FileSubmission[]; total: number }> {
         const query = new URLSearchParams()
         if (params?.status) query.set('status', params.status)
@@ -256,8 +301,21 @@ class ApiService {
     }
 
     // Messages API
-    async sendMessage(data: { channel: string; content: string }): Promise<{ success: boolean; message: string }> {
-        return this.request('/api/messages/send', {
+    async getMessages(params?: { page?: number; pageSize?: number; target?: MessageTarget | 'all'; committeeId?: number; search?: string }): Promise<MessageListResponse> {
+        const query = new URLSearchParams()
+        if (params?.page) query.set('page', params.page.toString())
+        if (params?.pageSize) query.set('pageSize', params.pageSize.toString())
+        if (params?.committeeId) query.set('committeeId', params.committeeId.toString())
+        if (params?.target && params.target !== 'all') query.set('target', params.target)
+        if (params?.target === 'all') query.set('target', 'all')
+        if (params?.search) query.set('search', params.search)
+
+        const suffix = query.toString() ? `?${query}` : ''
+        return this.request(`/api/messages${suffix}`)
+    }
+
+    async sendMessage(data: { target: MessageTarget; content: string; targetId?: number | null; committeeId?: number | null }): Promise<{ message: MessageRecord }> {
+        return this.request('/api/messages', {
             method: 'POST',
             body: JSON.stringify(data),
         })

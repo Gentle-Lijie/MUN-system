@@ -64,7 +64,8 @@ return static function (Router $router): void {
     $router->get('/api/files/reference', [FilesController::class, 'getReference']);
     $router->post('/api/files/upload', [FilesController::class, 'uploadFile']);
 
-    $router->post('/api/messages/send', [MessageController::class, 'send']);
+    $router->get('/api/messages', [MessageController::class, 'index']);
+    $router->post('/api/messages', [MessageController::class, 'send']);
 
     $router->get('/api/crises', [CrisisController::class, 'index']);
     $router->post('/api/crises', [CrisisController::class, 'store']);

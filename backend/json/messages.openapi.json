@@ -12,9 +12,87 @@
         }
     ],
     "paths": {
-        "/api/messages/send": {
+        "/api/messages": {
+            "get": {
+                "summary": "List messages available to the current user",
+                "operationId": "listMessages",
+                "x-apifox-folder": "messages",
+                "security": [
+                    {
+                        "bearerAuth": []
+                    },
+                    {
+                        "cookieAuth": []
+                    }
+                ],
+                "parameters": [
+                    {
+                        "name": "page",
+                        "in": "query",
+                        "schema": {
+                            "type": "integer",
+                            "minimum": 1,
+                            "default": 1
+                        }
+                    },
+                    {
+                        "name": "pageSize",
+                        "in": "query",
+                        "schema": {
+                            "type": "integer",
+                            "minimum": 1,
+                            "maximum": 100,
+                            "default": 20
+                        }
+                    },
+                    {
+                        "name": "target",
+                        "in": "query",
+                        "schema": {
+                            "type": "string",
+                            "enum": [
+                                "all",
+                                "everyone",
+                                "delegate",
+                                "committee",
+                                "dias"
+                            ]
+                        }
+                    },
+                    {
+                        "name": "committeeId",
+                        "in": "query",
+                        "schema": {
+                            "type": "integer",
+                            "minimum": 1
+                        }
+                    },
+                    {
+                        "name": "search",
+                        "in": "query",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Message list",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/MessageListResponse"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized"
+                    }
+                }
+            },
             "post": {
-                "summary": "Send a message to a channel",
+                "summary": "Send a message",
                 "operationId": "sendMessage",
                 "x-apifox-folder": "messages",
                 "security": [
@@ -51,6 +129,9 @@
                     },
                     "401": {
                         "description": "Unauthorized"
+                    },
+                    "403": {
+                        "description": "Forbidden"
                     }
                 }
             }
@@ -58,39 +139,179 @@
     },
     "components": {
         "schemas": {
+            "MessageListResponse": {
+                "type": "object",
+                "properties": {
+                    "items": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/MessageItem"
+                        }
+                    },
+                    "total": {
+                        "type": "integer"
+                    },
+                    "page": {
+                        "type": "integer"
+                    },
+                    "pageSize": {
+                        "type": "integer"
+                    },
+                    "recipients": {
+                        "$ref": "#/components/schemas/RecipientsPayload"
+                    },
+                    "allowedTargets": {
+                        "type": "array",
+                        "items": {
+                            "type": "string",
+                            "enum": [
+                                "everyone",
+                                "delegate",
+                                "committee",
+                                "dias"
+                            ]
+                        }
+                    }
+                }
+            },
+            "MessageItem": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "integer"
+                    },
+                    "target": {
+                        "type": "string"
+                    },
+                    "targetId": {
+                        "type": "integer",
+                        "nullable": true
+                    },
+                    "channel": {
+                        "type": "string"
+                    },
+                    "committee": {
+                        "$ref": "#/components/schemas/CommitteeRef"
+                    },
+                    "content": {
+                        "type": "string"
+                    },
+                    "time": {
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "sender": {
+                        "$ref": "#/components/schemas/SenderRef"
+                    },
+                    "targetMeta": {
+                        "type": "object",
+                        "additionalProperties": true
+                    }
+                }
+            },
+            "CommitteeRef": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "integer"
+                    },
+                    "name": {
+                        "type": "string"
+                    },
+                    "code": {
+                        "type": "string"
+                    }
+                }
+            },
+            "SenderRef": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "integer"
+                    },
+                    "name": {
+                        "type": "string"
+                    },
+                    "role": {
+                        "type": "string"
+                    }
+                }
+            },
+            "RecipientsPayload": {
+                "type": "object",
+                "properties": {
+                    "committees": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/CommitteeRef"
+                        }
+                    },
+                    "delegates": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/DelegateRef"
+                        }
+                    }
+                }
+            },
+            "DelegateRef": {
+                "type": "object",
+                "properties": {
+                    "delegateId": {
+                        "type": "integer"
+                    },
+                    "userId": {
+                        "type": "integer"
+                    },
+                    "name": {
+                        "type": "string"
+                    },
+                    "committeeId": {
+                        "type": "integer"
+                    },
+                    "committeeName": {
+                        "type": "string"
+                    },
+                    "country": {
+                        "type": "string"
+                    }
+                }
+            },
             "SendMessageRequest": {
                 "type": "object",
                 "required": [
-                    "channel",
+                    "target",
                     "content"
                 ],
                 "properties": {
-                    "channel": {
+                    "target": {
                         "type": "string",
                         "enum": [
-                            "presidium",
-                            "all",
-                            "crisis"
-                        ],
-                        "description": "Target channel for the message"
+                            "everyone",
+                            "delegate",
+                            "committee",
+                            "dias"
+                        ]
+                    },
+                    "targetId": {
+                        "type": "integer",
+                        "nullable": true
+                    },
+                    "committeeId": {
+                        "type": "integer",
+                        "nullable": true
                     },
                     "content": {
                         "type": "string",
-                        "maxLength": 1000,
-                        "description": "Message content"
+                        "maxLength": 2000
                     }
                 }
             },
             "SendMessageResponse": {
                 "type": "object",
                 "properties": {
-                    "success": {
-                        "type": "boolean",
-                        "example": true
-                    },
                     "message": {
-                        "type": "string",
-                        "example": "Message sent successfully"
+                        "$ref": "#/components/schemas/MessageItem"
                     }
                 }
             }

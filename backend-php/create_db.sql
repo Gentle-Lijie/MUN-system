@@ -276,13 +276,18 @@ CREATE TABLE
         id INT AUTO_INCREMENT PRIMARY KEY,
         time TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         from_user_id INT NOT NULL,
-        to_user_id INT, -- NULL for channel messages
+target_id INT, -- delegate user_id or committee_id depending on target
         channel ENUM ('private', 'committee', 'global', 'dais') NOT NULL,
-        committee_id INT, -- For committee channel
+target ENUM(
+    'everyone',
+    'delegate',
+    'committee',
+    'dias'
+) NOT NULL DEFAULT 'everyone',
+committee_id INT,
         content TEXT NOT NULL,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        FOREIGN KEY (from_user_id) REFERENCES Users (id),
-        FOREIGN KEY (to_user_id) REFERENCES Users (id),
+FOREIGN KEY (from_user_id) REFERENCES Users (id),
         FOREIGN KEY (committee_id) REFERENCES Committees (id)
     );
 
@@ -326,5 +331,8 @@ CREATE INDEX idx_files_status ON Files (status);
 CREATE INDEX idx_timelines_committee ON Timelines (committee_id);
 
 CREATE INDEX idx_messages_channel ON Messages (channel);
+CREATE INDEX idx_messages_target ON Messages (target);
+
+CREATE INDEX idx_messages_target_id ON Messages (target_id);
 
 CREATE INDEX idx_logs_action ON Logs (action);

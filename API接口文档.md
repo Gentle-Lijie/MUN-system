@@ -100,13 +100,8 @@
 
 | 接口 | 功能 |
 | --- | --- |
-| `GET /api/messages/history` | 广播消息历史（channel/target/sender/time）。|
-| `POST /api/messages/send` | 发送广播/主席团/指定会场消息。|
-| `GET /api/message-templates` | 列出预设模板，供快速填写。|
-| `POST /api/message-templates` | 新增模板。|
-| `GET /api/conversations` | 当前用户参与的私聊/小组会话。|
-| `GET /api/conversations/{conversationId}/messages` | 加载指定会话的消息列表。|
-| `POST /api/conversations/{conversationId}/messages` | 在会话中发送消息。|
+| `GET /api/messages` | 根据身份返回可见的消息列表，支持 target / committee / search 过滤。|
+| `POST /api/messages` | 发送广播、主席团通道或会场/代表定向消息。|
 
 ## 系统日志 (Logs)
 
