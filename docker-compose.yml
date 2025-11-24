@@ -1,6 +1,8 @@
 services:
   db:
-    image: mysql:8.4
+    build:
+      context: .
+      dockerfile: backend-php/db.Dockerfile
     restart: unless-stopped
     environment:
       MYSQL_ROOT_PASSWORD: 123456

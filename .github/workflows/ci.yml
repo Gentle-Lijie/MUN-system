@@ -11,6 +11,9 @@ on:
 jobs:
   build-and-push:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
 
     steps:
     - name: Checkout code
@@ -25,6 +28,28 @@ jobs:
         registry: ghcr.io
         username: ${{ github.actor }}
         password: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Extract metadata for db
+      id: meta-db
+      uses: docker/metadata-action@v5
+      with:
+        images: ghcr.io/${{ github.repository }}/db
+        tags: |
+          type=ref,event=branch
+          type=ref,event=pr
+          type=sha,prefix={{branch}}-
+          type=raw,value=latest,enable={{is_default_branch}}
+
+    - name: Build and push db image
+      uses: docker/build-push-action@v5
+      with:
+        context: .
+        file: backend-php/db.Dockerfile
+        push: true
+        tags: ${{ steps.meta-db.outputs.tags }}
+        labels: ${{ steps.meta-db.outputs.labels }}
+        cache-from: type=gha
+        cache-to: type=gha,mode=max
 
     - name: Extract metadata for backend
       id: meta-backend
