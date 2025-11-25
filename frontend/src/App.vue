@@ -302,8 +302,10 @@ watch(needsLogin, (newVal) => {
                 <path stroke-linecap="round" stroke-linejoin="round"
                   d="M3 8l7.89 4.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
               </svg>
-              <input type="email" class="grow bg-transparent focus:outline-none" placeholder="输入邮箱"
+              <input type="email" autocomplete="username" class="grow bg-transparent focus:outline-none" placeholder="输入邮箱"
                 v-model="loginForm.email" required />
+            <!-- Hidden username field for password manager accessibility -->
+            <input type="text" name="username" autocomplete="username" style="display:none" v-model="loginForm.email" />
             </div>
           </FormField>
           <FormField legend="登录密码" label="密码" fieldset-class="border border-base-300 rounded-box p-4">
@@ -313,7 +315,7 @@ watch(needsLogin, (newVal) => {
                 <path stroke-linecap="round" stroke-linejoin="round"
                   d="M16.5 10.125V6.75a4.5 4.5 0 10-9 0v3.375M18.75 10.125h-13.5A1.125 1.125 0 004.125 11.25v8.625c0 .621.504 1.125 1.125 1.125h13.5a1.125 1.125 0 001.125-1.125V11.25a1.125 1.125 0 00-1.125-1.125z" />
               </svg>
-              <input type="password" class="grow bg-transparent focus:outline-none" placeholder="输入密码"
+              <input type="password" autocomplete="current-password" class="grow bg-transparent focus:outline-none" placeholder="输入密码"
                 v-model="loginForm.password" required />
             </div>
           </FormField>
@@ -358,7 +360,7 @@ watch(needsLogin, (newVal) => {
                 <path stroke-linecap="round" stroke-linejoin="round"
                   d="M16.5 10.125V6.75a4.5 4.5 0 10-9 0v3.375M18.75 10.125h-13.5A1.125 1.125 0 004.125 11.25v8.625c0 .621.504 1.125 1.125 1.125h13.5a1.125 1.125 0 001.125-1.125V11.25a1.125 1.125 0 00-1.125-1.125z" />
               </svg>
-              <input type="password" class="grow bg-transparent focus:outline-none" placeholder="当前密码"
+              <input type="password" autocomplete="current-password" class="grow bg-transparent focus:outline-none" placeholder="当前密码"
                 v-model="changePasswordForm.currentPassword" required />
             </div>
           </FormField>
@@ -370,7 +372,7 @@ watch(needsLogin, (newVal) => {
                 <path stroke-linecap="round" stroke-linejoin="round"
                   d="M16.5 10.125V6.75a4.5 4.5 0 10-9 0v3.375M18.75 10.125h-13.5A1.125 1.125 0 004.125 11.25v8.625c0 .621.504 1.125 1.125 1.125h13.5a1.125 1.125 0 001.125-1.125V11.25a1.125 1.125 0 00-1.125-1.125z" />
               </svg>
-              <input type="password" class="grow bg-transparent focus:outline-none" placeholder="新密码"
+              <input type="password" autocomplete="new-password" class="grow bg-transparent focus:outline-none" placeholder="新密码"
                 v-model="changePasswordForm.newPassword" required />
             </div>
           </FormField>
@@ -382,7 +384,7 @@ watch(needsLogin, (newVal) => {
                 <path stroke-linecap="round" stroke-linejoin="round"
                   d="M16.5 10.125V6.75a4.5 4.5 0 10-9 0v3.375M18.75 10.125h-13.5A1.125 1.125 0 004.125 11.25v8.625c0 .621.504 1.125 1.125 1.125h13.5a1.125 1.125 0 001.125-1.125V11.25a1.125 1.125 0 00-1.125-1.125z" />
               </svg>
-              <input type="password" class="grow bg-transparent focus:outline-none" placeholder="确认新密码"
+              <input type="password" autocomplete="new-password" class="grow bg-transparent focus:outline-none" placeholder="确认新密码"
                 v-model="changePasswordForm.confirmPassword" required />
             </div>
           </FormField>

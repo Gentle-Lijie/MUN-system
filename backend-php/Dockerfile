@@ -7,6 +7,8 @@ FROM php:8.3-apache
 RUN docker-php-ext-install pdo pdo_mysql
 WORKDIR /var/www/html
 COPY --from=vendor /app/vendor /var/www/html/vendor
+RUN find /var/www/html/vendor -type d -exec chmod 755 {} \; \
+    && find /var/www/html/vendor -type f -exec chmod 644 {} \;
 COPY . /var/www/html
 RUN php database/migrate.php
 COPY docker/vhost.conf /etc/apache2/sites-available/000-default.conf

@@ -12,6 +12,7 @@ return [
     'session' => [
         'cookie' => Env::get('SESSION_COOKIE', 'mun_session'),
         'secure' => Env::bool('SESSION_COOKIE_SECURE', false),
+        'domain' => Env::get('SESSION_COOKIE_DOMAIN'),
     ],
     'cors' => [
         'origins' => Env::array('CORS_ORIGINS', ['http://localhost:5173']),

@@ -40,6 +40,10 @@ class AuthController extends Controller
         $cookieName = (string) $this->app->config('session.cookie', 'mun_session');
         $secure = (bool) $this->app->config('session.secure', false);
         $cookie = Cookie::create($cookieName, $token)
+        $domain = (string) $this->app->config('session.domain');
+        if ($domain !== '') {
+            $cookie = $cookie->withDomain($domain);
+        }
             ->withSecure($secure)
             ->withHttpOnly(true)
             ->withPath('/')
