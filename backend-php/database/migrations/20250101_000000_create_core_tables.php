@@ -17,7 +17,7 @@ return static function (Capsule $capsule): void {
             $table->string('phone', 20)->nullable();
             $table->dateTime('last_login')->nullable();
             $table->string('session_token', 255)->nullable()->unique();
-            $table->text('permissions')->default('[]');
+            $table->text('permissions');
             $table->timestampsTz();
         });
     }
