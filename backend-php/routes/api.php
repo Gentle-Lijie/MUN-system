@@ -37,6 +37,7 @@ return static function (Router $router): void {
     $router->get('/api/venues/{committeeId:\d+}/delegate', [DelegateController::class, 'byCommittee']);
 
     $router->get('/api/venues', [VenueController::class, 'index']);
+    $router->post('/api/venues', [VenueController::class, 'store']);
     $router->post('/api/venues/{venueId:\d+}', [VenueController::class, 'update']);
     $router->post('/api/venues/{venueId:\d+}/sessions', [VenueController::class, 'addSession']);
 

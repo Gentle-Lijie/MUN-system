@@ -24,6 +24,87 @@ class VenueController extends Controller
         ]);
     }
 
+    public function store(Request $request): JsonResponse
+    {
+        $user = AuthSupport::requirePresidium($this->app, $request);
+        $payload = $this->body($request);
+        if (!$payload) {
+            throw new HttpException('Request body is required', 400);
+        }
+
+        $code = strtoupper(trim((string) ($payload['code'] ?? '')));
+        $name = trim((string) ($payload['name'] ?? ''));
+        if ($code === '' || $name === '') {
+            throw new HttpException('code and name are required', 400);
+        }
+        $exists = Committee::query()->whereRaw('UPPER(code) = ?', [$code])->exists();
+        if ($exists) {
+            throw new HttpException('Venue code already exists', 409);
+        }
+
+        $committee = new Committee();
+        $committee->code = $code;
+        $committee->name = $name;
+        $committee->created_by = $user->id;
+
+        $venue = $payload['venue'] ?? ($payload['location'] ?? null);
+        $committee->venue = $venue ? trim((string) $venue) : null;
+        if (array_key_exists('description', $payload)) {
+            $description = $payload['description'];
+            $committee->description = $description ? trim((string) $description) : null;
+        }
+
+        $status = strtolower(trim((string) ($payload['status'] ?? 'preparation')));
+        $allowedStatus = ['preparation', 'in_session', 'paused', 'closed'];
+        if (!in_array($status, $allowedStatus, true)) {
+            throw new HttpException('Unsupported status value', 400);
+        }
+        $committee->status = $status;
+
+        if (array_key_exists('capacity', $payload)) {
+            $capacity = Validation::int($payload['capacity'], 'capacity');
+            if ($capacity <= 0) {
+                throw new HttpException('capacity must be greater than zero', 400);
+            }
+            $committee->capacity = $capacity;
+        }
+
+        if (array_key_exists('dais', $payload)) {
+            $dais = $payload['dais'];
+            if ($dais === null) {
+                $committee->setDaisMembers([]);
+            } elseif (!is_array($dais)) {
+                throw new HttpException('dais must be a list when provided', 400);
+            } else {
+                foreach ($dais as $item) {
+                    if (!is_array($item) || !isset($item['id'])) {
+                        throw new HttpException('each dais item must have id and role', 400);
+                    }
+                }
+                $committee->setDaisMembers($dais);
+            }
+        }
+
+        if (array_key_exists('timeConfig', $payload)) {
+            $config = $payload['timeConfig'];
+            if ($config === null) {
+                $committee->setTimeConfig(null);
+            } elseif (!is_array($config)) {
+                throw new HttpException('timeConfig must be an object', 400);
+            } else {
+                $committee->setTimeConfig([
+                    'realTimeAnchor' => $config['realTimeAnchor'] ?? null,
+                    'flowSpeed' => $config['flowSpeed'] ?? 1,
+                ]);
+            }
+        }
+
+        $committee->save();
+        $committee->load('sessions');
+
+        return $this->json($committee->toApiResponse(), 201);
+    }
+
     public function update(Request $request, array $params): JsonResponse
     {
         AuthSupport::requirePresidium($this->app, $request);

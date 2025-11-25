@@ -34,6 +34,57 @@
                         }
                     }
                 }
+            },
+            "post": {
+                "summary": "Create venue",
+                "description": "Creates a new committee/venue record. Requires presidium privileges (admin/dais/presidium:manage).",
+                "operationId": "createVenue",
+                "x-apifox-folder": "venues",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/CreateVenueRequest"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Created venue",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Venue"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Validation error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Missing permissions"
+                    },
+                    "409": {
+                        "description": "Duplicate venue code",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        }
+                    }
+                }
             }
         },
         "/api/venues/{venueId}": {
@@ -306,6 +357,51 @@
                     "items",
                     "total"
                 ]
+            },
+            "CreateVenueRequest": {
+                "type": "object",
+                "required": [
+                    "code",
+                    "name"
+                ],
+                "properties": {
+                    "code": {
+                        "type": "string",
+                        "description": "Unique short code of the committee"
+                    },
+                    "name": {
+                        "type": "string"
+                    },
+                    "venue": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "location": {
+                        "type": "string",
+                        "description": "Alias of venue",
+                        "nullable": true
+                    },
+                    "description": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "status": {
+                        "$ref": "#/components/schemas/CommitteeStatus"
+                    },
+                    "capacity": {
+                        "type": "integer",
+                        "minimum": 1
+                    },
+                    "dais": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/DaisMember"
+                        }
+                    },
+                    "timeConfig": {
+                        "$ref": "#/components/schemas/TimeConfig"
+                    }
+                }
             },
             "UpdateVenueRequest": {
                 "type": "object",
