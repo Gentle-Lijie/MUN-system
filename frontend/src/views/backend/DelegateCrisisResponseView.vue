@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, onMounted, reactive, ref, watch } from 'vue'
+import FormField from '@/components/common/FormField.vue'
 import { api, API_BASE, type Crisis } from '@/services/api'
 
 const crises = ref<Crisis[]>([])
@@ -149,31 +150,26 @@ onMounted(fetchCrises)
           <h3 class="font-semibold">提交反馈</h3>
           <button class="btn btn-xs btn-ghost" type="button" @click="fetchCrises">刷新</button>
         </div>
-        <label class="form-control">
-          <span class="label-text">选择危机</span>
-          <select v-model="selectedId" class="select select-bordered">
+        <FormField legend="选择危机" label="请选择要响应的危机" fieldsetClass="w-full"
+          :description="currentCrisis
+            ? `状态：${currentCrisis.status === 'active' ? '进行中' : currentCrisis.status === 'resolved' ? '已结案' : '已归档'} · ${currentCrisis.responsesAllowed ? '允许提交反馈' : '反馈通道关闭'}`
+            : '请选择一条危机以查看详情'">
+          <select v-model="selectedId" class="select select-bordered w-full">
             <option v-for="crisis in crises" :key="crisis.id" :value="crisis.id">
               {{ crisis.title }}
             </option>
           </select>
-        </label>
-        <p class="text-sm text-base-content/60" v-if="currentCrisis">
-          状态：{{ currentCrisis.status === 'active' ? '进行中' : currentCrisis.status === 'resolved' ? '已结案' : '已归档' }} ·
-          {{ currentCrisis.responsesAllowed ? '允许提交反馈' : '反馈通道关闭' }}
-        </p>
-        <label class="form-control">
-          <span class="label-text">反馈 *</span>
-          <textarea v-model="form.feedback" class="textarea textarea-bordered" rows="8" placeholder="请输入您的反馈，包括局势评估、行动计划和所需资源等" required></textarea>
-        </label>
-        <div class="space-y-2">
-          <label class="form-control">
-            <span class="label-text">附件（可选）</span>
-            <input type="file" class="file-input file-input-bordered w-full" @change="handleFileChange" />
-          </label>
-          <div class="flex items-center gap-2 text-sm" v-if="form.filePath">
-            <a :href="`${API_BASE}${form.filePath}`" target="_blank" class="link">已上传附件</a>
-            <button type="button" class="btn btn-xs btn-ghost" @click="clearAttachment">移除</button>
-          </div>
+        </FormField>
+        <FormField legend="反馈内容" label="请输入完整反馈" fieldsetClass="w-full">
+          <textarea v-model="form.feedback" class="textarea textarea-bordered" rows="8"
+            placeholder="请输入您的反馈，包括局势评估、行动计划和所需资源等" required></textarea>
+        </FormField>
+        <FormField legend="附件（可选）" label="上传补充材料" fieldsetClass="w-full">
+          <input type="file" class="file-input file-input-bordered w-full" @change="handleFileChange" />
+        </FormField>
+        <div class="flex items-center gap-2 text-sm" v-if="form.filePath">
+          <a :href="`${API_BASE}${form.filePath}`" target="_blank" class="link">已上传附件</a>
+          <button type="button" class="btn btn-xs btn-ghost" @click="clearAttachment">移除</button>
         </div>
         <button type="submit" class="btn btn-primary w-full" :disabled="submitting">
           {{ submitting ? '提交中...' : '提交反馈' }}

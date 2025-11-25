@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, onMounted, reactive, ref } from 'vue'
+import FormField from '@/components/common/FormField.vue'
 
 type CommitteeStatus = 'preparation' | 'in_session' | 'paused' | 'closed'
 
@@ -362,7 +363,10 @@ onMounted(() => {
       </div>
     </section>
 
-    <input ref="importInputRef" type="file" accept=".csv" class="hidden" @change="handleImportFile" />
+    <FormField legend="代表导入" label="上传 CSV 文件" fieldsetClass="hidden">
+      <input ref="importInputRef" type="file" accept=".csv" class="file-input file-input-bordered"
+        @change="handleImportFile" />
+    </FormField>
 
     <div v-if="errorMessage" class="alert alert-error alert-soft text-sm">
       <span>{{ errorMessage }}</span>
@@ -374,17 +378,21 @@ onMounted(() => {
     <section class="grid gap-6 xl:grid-cols-[0.58fr,1fr]">
       <aside class="space-y-4">
         <div class="flex flex-wrap gap-3">
-          <label class="input input-bordered flex items-center gap-2 grow min-w-[12rem]">
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" class="h-4 w-4 opacity-50" fill="currentColor">
-              <path
-                d="M11 4a7 7 0 015.618 11.16l3.11 3.11a1 1 0 01-1.414 1.415l-3.11-3.112A7 7 0 1111 4zm0 2a5 5 0 100 10 5 5 0 000-10z" />
-            </svg>
-            <input v-model="committeeFilters.keyword" type="text" class="grow" placeholder="搜索会场/地点" />
-          </label>
-          <select v-model="committeeFilters.status" class="select select-bordered w-36">
-            <option value="all">全部状态</option>
-            <option v-for="item in statusOptions" :key="item.value" :value="item.value">{{ item.label }}</option>
-          </select>
+          <FormField legend="会场搜索" label="按名称/代码/地点筛选" fieldsetClass="flex-1 min-w-[14rem]">
+            <div class="input input-bordered flex items-center gap-2 w-full">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" class="h-4 w-4 opacity-50" fill="currentColor">
+                <path
+                  d="M11 4a7 7 0 015.618 11.16l3.11 3.11a1 1 0 01-1.414 1.415l-3.11-3.112A7 7 0 1111 4zm0 2a5 5 0 100 10 5 5 0 000-10z" />
+              </svg>
+              <input v-model="committeeFilters.keyword" type="text" class="grow" placeholder="搜索会场/地点" />
+            </div>
+          </FormField>
+          <FormField legend="状态筛选" label="显示指定会场状态" fieldsetClass="w-40 shrink-0">
+            <select v-model="committeeFilters.status" class="select select-bordered w-full">
+              <option value="all">全部状态</option>
+              <option v-for="item in statusOptions" :key="item.value" :value="item.value">{{ item.label }}</option>
+            </select>
+          </FormField>
         </div>
 
         <div class="stats stats-vertical md:stats-horizontal shadow-none">
@@ -444,14 +452,16 @@ onMounted(() => {
               <p class="text-sm text-base-content/70">显示 {{ delegateStats.visible }} / {{ delegateStats.total }} 条记录</p>
             </div>
             <div class="flex flex-wrap gap-2 items-center">
-              <label class="input input-bordered flex items-center gap-2 w-56">
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" class="h-4 w-4 opacity-50"
-                  fill="currentColor">
-                  <path
-                    d="M11 4a7 7 0 015.618 11.16l3.11 3.11a1 1 0 01-1.414 1.415l-3.11-3.112A7 7 0 1111 4zm0 2a5 5 0 100 10 5 5 0 000-10z" />
-                </svg>
-                <input v-model="delegateKeyword" type="text" class="grow" placeholder="搜索代表/国家" />
-              </label>
+              <FormField legend="代表搜索" label="按姓名/国家/邮箱" fieldsetClass="w-60 shrink-0">
+                <div class="input input-bordered flex items-center gap-2 w-full">
+                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" class="h-4 w-4 opacity-50"
+                    fill="currentColor">
+                    <path
+                      d="M11 4a7 7 0 015.618 11.16l3.11 3.11a1 1 0 01-1.414 1.415l-3.11-3.112A7 7 0 1111 4zm0 2a5 5 0 100 10 5 5 0 000-10z" />
+                  </svg>
+                  <input v-model="delegateKeyword" type="text" class="grow" placeholder="搜索代表/国家" />
+                </div>
+              </FormField>
               <button v-if="selectedCommittee" class="btn btn-ghost" @click="handleClearSelection">显示全部</button>
             </div>
           </div>
@@ -513,37 +523,33 @@ onMounted(() => {
         <h3 class="text-lg font-semibold">{{ editForm.id ? '编辑代表' : '新增代表' }}</h3>
         <form class="space-y-4" @submit.prevent="saveDelegate">
           <div class="grid gap-4 md:grid-cols-2">
-            <label class="form-control">
-              <span class="label-text">所属会场</span>
-              <select v-model.number="editForm.committeeId" class="select select-bordered">
+            <FormField legend="所属会场" label="请选择代表所属会场" fieldsetClass="w-full">
+              <select v-model.number="editForm.committeeId" class="select select-bordered w-full">
                 <option v-for="committee in committees" :key="committee.id" :value="committee.id">
                   {{ committee.name }} · {{ committee.code }}
                 </option>
               </select>
-            </label>
-            <label class="form-control">
-              <span class="label-text">国家/地区</span>
+            </FormField>
+            <FormField legend="国家/地区" label="如 China" fieldsetClass="w-full">
               <input v-model="editForm.country" type="text" class="input input-bordered" placeholder="例如 China" />
-            </label>
-            <label class="form-control">
-              <span class="label-text">否决权</span>
-              <select v-model="editForm.vetoAllowed" class="select select-bordered">
+            </FormField>
+            <FormField legend="否决权" label="代表是否拥有否决权" fieldsetClass="w-full">
+              <select v-model="editForm.vetoAllowed" class="select select-bordered w-full">
                 <option :value="false">无否决权</option>
                 <option :value="true">拥有否决权</option>
               </select>
-            </label>
+            </FormField>
           </div>
-          <div class="space-y-2">
-            <div class="flex items-center justify-between">
-              <span class="label-text">选择代表用户</span>
-              <label class="input input-bordered flex items-center gap-2 w-60">
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" class="h-4 w-4 opacity-50"
-                  fill="currentColor">
-                  <path
-                    d="M11 4a7 7 0 015.618 11.16l3.11 3.11a1 1 0 01-1.414 1.415l-3.11-3.112A7 7 0 1111 4zm0 2a5 5 0 100 10 5 5 0 000-10z" />
-                </svg>
-                <input v-model="userSearch" type="text" class="grow" placeholder="搜索姓名/邮箱" />
-              </label>
+          <fieldset class="fieldset w-full space-y-3">
+            <legend class="fieldset-legend text-base font-semibold mb-3">选择代表用户</legend>
+            <p class="text-sm text-base-content/70">搜索姓名或邮箱后选择对应代表账户。</p>
+            <div class="input input-bordered flex items-center gap-2 w-full">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" class="h-4 w-4 opacity-50"
+                fill="currentColor">
+                <path
+                  d="M11 4a7 7 0 015.618 11.16l3.11 3.11a1 1 0 01-1.414 1.415l-3.11-3.112A7 7 0 1111 4zm0 2a5 5 0 100 10 5 5 0 000-10z" />
+              </svg>
+              <input v-model="userSearch" type="text" class="grow" placeholder="搜索姓名/邮箱" />
             </div>
             <div class="max-h-60 overflow-y-auto border border-base-200 rounded-2xl p-3 space-y-2">
               <label v-for="user in filteredDelegateUsers" :key="user.id"
@@ -564,7 +570,7 @@ onMounted(() => {
                 <span class="loading loading-spinner"></span>
               </div>
             </div>
-          </div>
+          </fieldset>
           <div class="modal-action">
             <button type="button" class="btn btn-ghost" @click="closeDelegateModal">取消</button>
             <button class="btn btn-primary" type="submit" :disabled="savingDelegate">

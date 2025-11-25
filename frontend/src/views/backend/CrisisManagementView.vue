@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, onMounted, reactive, ref } from 'vue'
+import FormField from '@/components/common/FormField.vue'
 import { api, API_BASE, type Crisis, type CrisisStatus, type CrisisResponseItem, type Venue } from '@/services/api'
 
 const crises = ref<Crisis[]>([])
@@ -206,13 +207,15 @@ onMounted(() => {
         <p class="text-sm text-base-content/70">主席团可以发布危机、限制面向的委员会，并查看各代表反馈。</p>
       </div>
       <div class="ml-auto flex flex-wrap gap-3 items-center">
-        <select v-model="filterStatus" class="select select-bordered select-sm w-36">
-          <option value="all">全部状态</option>
-          <option value="draft">草稿</option>
-          <option value="active">进行中</option>
-          <option value="resolved">已结案</option>
-          <option value="archived">已归档</option>
-        </select>
+        <FormField legend="危机状态" label="筛选目标" fieldsetClass="w-40">
+          <select v-model="filterStatus" class="select select-bordered select-sm w-full">
+            <option value="all">全部状态</option>
+            <option value="draft">草稿</option>
+            <option value="active">进行中</option>
+            <option value="resolved">已结案</option>
+            <option value="archived">已归档</option>
+          </select>
+        </FormField>
         <button class="btn btn-sm" @click="fetchCrises" :disabled="loading">刷新</button>
       </div>
     </header>
@@ -266,45 +269,38 @@ onMounted(() => {
           <h3 class="font-semibold">{{ editingId ? '编辑危机' : '发布危机' }}</h3>
           <button v-if="editingId" type="button" class="btn btn-xs btn-ghost" @click="resetForm">新建</button>
         </div>
-        <label class="form-control">
-          <span class="label-text">标题</span>
+        <FormField legend="危机标题" label="请输入标题" fieldsetClass="w-full">
           <input v-model="form.title" type="text" class="input input-bordered" placeholder="危机标题" required />
-        </label>
-        <label class="form-control">
-          <span class="label-text">危机详情</span>
-          <textarea v-model="form.content" class="textarea textarea-bordered" rows="5" placeholder="描述背景、任务目标、时间线"
-            required></textarea>
-        </label>
-        <label class="form-control">
-          <span class="label-text">面向委员会</span>
+        </FormField>
+        <FormField legend="危机详情" label="描述背景、任务与时限" fieldsetClass="w-full">
+          <textarea v-model="form.content" class="textarea textarea-bordered" rows="5"
+            placeholder="描述背景、任务目标、时间线" required></textarea>
+        </FormField>
+        <FormField legend="面向委员会" label="支持多选" fieldsetClass="w-full"
+          description="不选择则默认推送至全部委员会">
           <select v-model="form.targetCommittees" class="select select-bordered h-32" multiple>
             <option v-for="venue in venues" :key="venue.id" :value="venue.id">{{ venue.name }} ({{ venue.code }})
             </option>
           </select>
-          <span class="label-text-alt text-base-content/60">不选择则默认推送至全部委员会</span>
-        </label>
-        <label class="form-control">
-          <span class="label-text">状态</span>
+        </FormField>
+        <FormField legend="危机状态" label="设置当前状态" fieldsetClass="w-full">
           <select v-model="form.status" class="select select-bordered">
             <option value="draft">草稿</option>
             <option value="active">进行中</option>
             <option value="resolved">已结案</option>
             <option value="archived">已归档</option>
           </select>
-        </label>
-        <label class="label cursor-pointer justify-start gap-3">
-          <span class="label-text">允许代表提交反馈</span>
+        </FormField>
+        <FormField legend="代表反馈" label="允许代表提交反馈" fieldsetClass="w-full"
+          description="开启后代表端可提交响应方案">
           <input type="checkbox" class="toggle toggle-primary" v-model="form.responsesAllowed" />
-        </label>
-        <div class="space-y-2">
-          <label class="form-control">
-            <span class="label-text">附件（可选）</span>
-            <input type="file" class="file-input file-input-bordered w-full" @change="handleFileChange" />
-          </label>
-          <div class="flex items-center gap-3 text-sm" v-if="form.filePath">
-            <a :href="`${API_BASE}${form.filePath}`" class="link" target="_blank" rel="noopener">当前附件</a>
-            <button class="btn btn-xs btn-ghost" type="button" @click="removeAttachment">移除</button>
-          </div>
+        </FormField>
+        <FormField legend="附件（可选）" label="上传危机附件" fieldsetClass="w-full">
+          <input type="file" class="file-input file-input-bordered w-full" @change="handleFileChange" />
+        </FormField>
+        <div class="flex items-center gap-3 text-sm px-4" v-if="form.filePath">
+          <a :href="`${API_BASE}${form.filePath}`" class="link" target="_blank" rel="noopener">当前附件</a>
+          <button class="btn btn-xs btn-ghost" type="button" @click="removeAttachment">移除</button>
         </div>
         <button type="submit" class="btn btn-primary w-full" :disabled="saving">
           {{ saving ? '保存中...' : editingId ? '保存修改' : '发布危机' }}
@@ -316,8 +312,10 @@ onMounted(() => {
       <div class="modal-box max-w-4xl">
         <h3 class="font-semibold text-lg mb-3">{{ responseModal.crisisTitle }} · 反馈列表</h3>
         <div class="flex gap-3 mb-4">
-          <input v-model="responseModal.search" type="text" placeholder="搜索代表姓名、委员会或国家"
-            class="input input-bordered flex-1" />
+          <FormField legend="反馈搜索" label="输入姓名/委员会/国家" fieldsetClass="flex-1">
+            <input v-model="responseModal.search" type="text" placeholder="搜索代表姓名、委员会或国家"
+              class="input input-bordered w-full" />
+          </FormField>
           <button class="btn btn-outline" @click="exportResponses"
             :disabled="responseModal.items.length === 0">导出CSV</button>
         </div>

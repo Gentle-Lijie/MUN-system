@@ -2,13 +2,18 @@
     <dialog v-if="modelValue" class="modal" open>
         <div class="modal-box">
             <h3 class="font-bold text-lg mb-4">选择发言者</h3>
-            <input v-model="search" type="text" placeholder="输入国家名或代表名" class="input input-bordered w-full mb-4" />
-            <select v-model="selectedDelegateId" class="select select-bordered w-full mb-4">
-                <option disabled selected value="">请选择发言者</option>
-                <option v-for="delegate in filteredDelegates" :key="delegate.id" :value="delegate.id">
-                    {{ delegate.country }} - {{ delegate.userName }}
-                </option>
-            </select>
+            <FormField legend="快速筛选" label="输入国家名或代表名">
+                <input v-model="search" type="text" placeholder="输入国家名或代表名"
+                    class="input input-bordered w-full" />
+            </FormField>
+            <FormField legend="选择发言者" label="从代表名单中选择" description="列表会根据当前会场自动过滤">
+                <select v-model="selectedDelegateId" class="select select-bordered w-full">
+                    <option disabled selected value="">请选择发言者</option>
+                    <option v-for="delegate in filteredDelegates" :key="delegate.id" :value="delegate.id">
+                        {{ delegate.country }} - {{ delegate.userName }}
+                    </option>
+                </select>
+            </FormField>
             <div class="modal-action">
                 <button class="btn btn-primary w-full" @click="handleConfirm">确认</button>
             </div>
@@ -21,6 +26,7 @@
 
 <script setup lang="ts">
 import { ref, computed, defineProps, defineEmits, watch } from 'vue'
+import FormField from '@/components/common/FormField.vue'
 import { API_BASE } from '@/services/api'
 
 const props = defineProps<{ modelValue: boolean; committeeId?: string }>()

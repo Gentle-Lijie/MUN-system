@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, onMounted, reactive, ref, watch } from 'vue'
+import FormField from '@/components/common/FormField.vue'
 
 type UserRole = 'admin' | 'dais' | 'delegate' | 'observer'
 type RoleFilter = 'all' | 'admin' | 'dais' | 'delegate'
@@ -337,23 +338,29 @@ watch(roleFilter, () => {
         </header>
 
         <section class="grid gap-6 xl:grid-cols-[2fr,1fr]">
-            <input ref="importInputRef" type="file" accept=".csv" class="hidden" @change="handleImportFile" />
+            <FormField legend="导入用户 CSV" label="选择 CSV 文件" fieldsetClass="hidden">
+                <input ref="importInputRef" type="file" accept=".csv" class="file-input file-input-bordered"
+                    @change="handleImportFile" />
+            </FormField>
             <div class="space-y-4">
                 <div class="flex flex-wrap gap-3 items-center">
-                    <div class="join flex flex-wrap gap-3 grow">
-                        <label class="input input-bordered flex items-center gap-2 join-item grow min-w-[12rem]">
+                    <div class="flex flex-wrap gap-3 grow">
+                        <FormField legend="关键词" label="按姓名 / 邮箱 / 电话搜索"
+                            fieldsetClass="grow min-w-[12rem]">
                             <input v-model="keyword" @keyup.enter="handleSearch" type="text"
-                                placeholder="按姓名 / 邮箱 / 电话搜索" class="grow" />
-                        </label>
-                        <label class="input input-bordered flex items-center gap-2 join-item grow min-w-[12rem]">
+                                placeholder="按姓名 / 邮箱 / 电话搜索" class="input input-bordered w-full" />
+                        </FormField>
+                        <FormField legend="学校筛选" label="按学校搜索" fieldsetClass="grow min-w-[12rem]">
                             <input v-model="committeeKeyword" @keyup.enter="handleSearch" type="text"
-                                placeholder="按学校搜索" class="grow" />
-                        </label>
-                        <select v-model="roleFilter" class="select select-bordered join-item w-40">
-                            <option v-for="option in roleOptions" :key="option.value" :value="option.value">
-                                {{ option.label }}
-                            </option>
-                        </select>
+                                placeholder="按学校搜索" class="input input-bordered w-full" />
+                        </FormField>
+                        <FormField legend="角色筛选" label="选择角色" fieldsetClass="w-40">
+                            <select v-model="roleFilter" class="select select-bordered w-full">
+                                <option v-for="option in roleOptions" :key="option.value" :value="option.value">
+                                    {{ option.label }}
+                                </option>
+                            </select>
+                        </FormField>
                     </div>
                     <div class="flex gap-2">
                         <button class="btn btn-outline" :disabled="loading" @click="handleSearch">搜索</button>
@@ -459,29 +466,26 @@ watch(roleFilter, () => {
 
                 <form class="border border-base-200 rounded-xl p-4 space-y-3" @submit.prevent="createUser">
                     <h3 class="font-semibold">创建新用户</h3>
-                    <label class="form-control w-full">
-                        <span class="label-text">姓名</span>
-                        <input v-model="newUserForm.name" type="text" class="input input-bordered" placeholder="输入姓名" />
-                    </label>
-                    <label class="form-control w-full">
-                        <span class="label-text">邮箱</span>
+                    <FormField legend="姓名" label="请输入姓名">
+                        <input v-model="newUserForm.name" type="text" class="input input-bordered"
+                            placeholder="输入姓名" />
+                    </FormField>
+                    <FormField legend="邮箱" label="用于登录的邮箱">
                         <input v-model="newUserForm.email" type="email" class="input input-bordered"
                             placeholder="user@mun.org" />
-                    </label>
-                    <label class="form-control w-full">
-                        <span class="label-text">角色</span>
+                    </FormField>
+                    <FormField legend="角色" label="分配系统角色">
                         <select v-model="newUserForm.role" class="select select-bordered">
                             <option value="dais">主席团</option>
                             <option value="admin">管理员</option>
                             <option value="delegate">代表</option>
                             <option value="observer">观察员</option>
                         </select>
-                    </label>
-                    <label class="form-control w-full">
-                        <span class="label-text">学校</span>
+                    </FormField>
+                    <FormField legend="学校/组织" label="输入所属单位">
                         <input v-model="newUserForm.organization" type="text" class="input input-bordered"
                             placeholder="如 UNSC / 秘书处" />
-                    </label>
+                    </FormField>
                     <button class="btn btn-primary w-full" type="submit" :disabled="creating">
                         <span v-if="creating" class="loading loading-spinner loading-sm"></span>
                         <span>立即创建</span>
@@ -496,18 +500,26 @@ watch(roleFilter, () => {
                 <h3 class="font-bold text-lg">配置权限 - {{ selectedUser?.name }}</h3>
                 <p class="py-4">选择用户允许的权限，支持按组批量操作。</p>
                 <div class="space-y-4">
-                    <div v-for="(group, role) in permissionGroups" :key="role" class="border border-base-200 rounded-lg p-4">
-                        <div class="flex items-center gap-2 mb-2">
-                            <input type="checkbox" class="checkbox" :checked="group.every(p => editingPermissions.includes(p))" @change="toggleGroup(group)" />
-                            <span class="font-semibold">{{ roleLabelMap[role as UserRole] }}权限</span>
-                        </div>
+                    <fieldset v-for="(group, role) in permissionGroups" :key="role"
+                        class="fieldset border border-base-200 rounded-lg p-4">
+                        <legend class="fieldset-legend text-base font-semibold mb-3">
+                            {{ roleLabelMap[role as UserRole] }} 权限
+                        </legend>
+                        <label class="label cursor-pointer justify-start gap-2 mb-2">
+                            <input type="checkbox" class="checkbox"
+                                :checked="group.every(p => editingPermissions.includes(p))"
+                                @change="toggleGroup(group)" />
+                            <span class="label-text">全选/取消该角色权限</span>
+                        </label>
                         <div class="grid grid-cols-2 gap-2 ml-6">
                             <label v-for="perm in group" :key="perm" class="flex items-center gap-2 cursor-pointer">
-                                <input type="checkbox" class="checkbox checkbox-sm" :checked="editingPermissions.includes(perm)" @change="togglePermission(perm)" />
+                                <input type="checkbox" class="checkbox checkbox-sm"
+                                    :checked="editingPermissions.includes(perm)"
+                                    @change="togglePermission(perm)" />
                                 <span class="text-sm">{{ permissionLabels[perm] || perm }}</span>
                             </label>
                         </div>
-                    </div>
+                    </fieldset>
                 </div>
                 <div class="modal-action">
                     <button class="btn" @click="permissionsModalOpen = false">取消</button>

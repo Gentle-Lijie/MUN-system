@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { onMounted, ref } from 'vue'
+import FormField from '@/components/common/FormField.vue'
 import { api, type FileSubmission, API_BASE } from '@/services/api'
 
 const submissions = ref<FileSubmission[]>([])
@@ -56,8 +57,10 @@ onMounted(fetchSubmissions)
     <section class="grid gap-6 lg:grid-cols-[2fr,1fr]">
       <div class="space-y-4">
         <div class="flex gap-4 mb-4">
-          <input v-model="searchQuery" type="text" placeholder="搜索文件标题或描述" class="input input-bordered flex-1"
-            @input="fetchSubmissions" />
+          <FormField legend="搜索" label="按标题或描述" fieldsetClass="w-full">
+            <input v-model="searchQuery" type="text" placeholder="搜索文件标题或描述"
+              class="input input-bordered w-full" @input="fetchSubmissions" />
+          </FormField>
         </div>
         <div v-if="loading" class="flex justify-center">
           <span class="loading loading-spinner loading-lg"></span>
@@ -96,18 +99,16 @@ onMounted(fetchSubmissions)
               <p class="font-medium">{{ selectedFile.title }}</p>
               <p class="text-sm text-base-content/70">{{ selectedFile.description }}</p>
             </div>
-            <label class="form-control">
-              <span class="label-text">审批意见</span>
+            <FormField legend="审批意见" label="请选择结果">
               <select v-model="decisionForm.decision" class="select select-bordered">
                 <option value="approved">通过</option>
                 <option value="rejected">驳回</option>
               </select>
-            </label>
-            <label class="form-control">
-              <span class="label-text">反馈意见</span>
+            </FormField>
+            <FormField legend="反馈意见" label="可选备注">
               <textarea v-model="decisionForm.dias_fb" class="textarea textarea-bordered" rows="3"
                 placeholder="可选的反馈意见"></textarea>
-            </label>
+            </FormField>
             <button class="btn btn-primary w-full" @click="submitDecision">提交审批</button>
           </div>
         </div>

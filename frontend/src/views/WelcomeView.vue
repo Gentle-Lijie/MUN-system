@@ -12,7 +12,7 @@
                 </p>
                 <div class="flex gap-4 justify-center">
                     <router-link to="/backend" class="btn btn-primary">进入后台</router-link>
-                    <router-link to="/management" class="btn btn-outline">会议管理</router-link>
+                    <router-link to="/display/1" class="btn btn-outline">显示大屏</router-link>
                 </div>
             </div>
         </div>

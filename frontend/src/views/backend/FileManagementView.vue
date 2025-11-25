@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { onMounted, reactive, ref } from 'vue'
+import FormField from '@/components/common/FormField.vue'
 import { api, type FileSubmission, type Venue, type FileReference, API_BASE } from '@/services/api'
 import PopupFileSelect from '@/components/PopupFileSelect.vue'
 
@@ -171,15 +172,19 @@ onMounted(() => {
     <section class="grid gap-6 xl:grid-cols-[1.6fr,1fr]">
       <!-- 左侧：文件列表 -->
       <div class="space-y-4">
-        <div class="flex gap-4 mb-4">
-          <select v-model="committeeFilter" class="select select-bordered" @change="fetchPublishedFiles">
-            <option value="">所有委员会</option>
-            <option v-for="venue in venues" :key="venue.id" :value="venue.id.toString()">
-              {{ venue.name }} ({{ venue.code }})
-            </option>
-          </select>
-          <input v-model="searchQuery" type="text" placeholder="搜索文件标题或描述" class="input input-bordered flex-1"
-            @input="fetchPublishedFiles" />
+        <div class="flex gap-4 mb-4 flex-wrap">
+          <FormField legend="委员会筛选" label="选择委员会" fieldsetClass="min-w-[12rem]">
+            <select v-model="committeeFilter" class="select select-bordered" @change="fetchPublishedFiles">
+              <option value="">所有委员会</option>
+              <option v-for="venue in venues" :key="venue.id" :value="venue.id.toString()">
+                {{ venue.name }} ({{ venue.code }})
+              </option>
+            </select>
+          </FormField>
+          <FormField legend="搜索" label="按标题或描述" fieldsetClass="flex-1">
+            <input v-model="searchQuery" type="text" placeholder="搜索文件标题或描述"
+              class="input input-bordered w-full" @input="fetchPublishedFiles" />
+          </FormField>
         </div>
 
         <div v-if="loading" class="flex justify-center py-8">
@@ -284,56 +289,49 @@ onMounted(() => {
 
           <!-- 编辑模式 -->
           <form v-else class="space-y-3" @submit.prevent="updateConfig">
-            <div>
-              <label class="label-text font-medium">文件标题</label>
+            <FormField legend="文件标题" label="输入标题">
               <input v-model="editForm.title" type="text" class="input input-bordered input-sm w-full" required />
-            </div>
-            <div>
-              <label class="label-text font-medium">描述</label>
+            </FormField>
+            <FormField legend="描述" label="可填写背景">
               <textarea v-model="editForm.description" class="textarea textarea-bordered textarea-sm w-full"
                 rows="3"></textarea>
-            </div>
-            <div>
-              <label class="label-text font-medium">主席意见（Dias feedback）</label>
+            </FormField>
+            <FormField legend="主席意见" label="Dias Feedback">
               <textarea v-model="editForm.dias_fb" class="textarea textarea-bordered textarea-sm w-full" rows="3"
                 placeholder="主席团反馈（可选）"></textarea>
-            </div>
-            <div>
-              <label class="label-text font-medium">分类</label>
+            </FormField>
+            <FormField legend="分类" label="选择文件分类">
               <select v-model="configForm.type" class="select select-bordered select-sm w-full" required>
                 <option v-for="option in typeOptions" :key="option.value" :value="option.value">
                   {{ option.label }}
                 </option>
               </select>
-            </div>
+            </FormField>
 
-            <div>
-              <label class="label-text font-medium">状态</label>
+            <FormField legend="状态" label="选择审批状态">
               <select v-model="configForm.status" class="select select-bordered select-sm w-full" required>
                 <option v-for="option in statusOptions" :key="option.value" :value="option.value">
                   {{ option.label }}
                 </option>
               </select>
-            </div>
+            </FormField>
 
-            <div>
-              <label class="label-text font-medium">可见性</label>
+            <FormField legend="可见性" label="设置发布范围">
               <select v-model="configForm.visibility" class="select select-bordered select-sm w-full" required>
                 <option v-for="option in visibilityOptions" :key="option.value" :value="option.value">
                   {{ option.label }}
                 </option>
               </select>
-            </div>
+            </FormField>
 
-            <div>
-              <label class="label-text font-medium">委员会</label>
+            <FormField legend="委员会" label="关联委员会">
               <select v-model="configForm.committee_id" class="select select-bordered select-sm w-full">
                 <option value="">无</option>
                 <option v-for="venue in venues" :key="venue.id" :value="venue.id.toString()">
                   {{ venue.name }} ({{ venue.code }})
                 </option>
               </select>
-            </div>
+            </FormField>
 
             <button type="submit" class="btn btn-primary btn-sm w-full">保存配置</button>
           </form>

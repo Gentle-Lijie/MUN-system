@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
+import FormField from '@/components/common/FormField.vue'
 
 type LogLevel = 'info' | 'warning' | 'error'
 
@@ -47,27 +48,23 @@ const filteredLogs = computed(() => {
 
     <section class="space-y-4">
       <div class="grid md:grid-cols-4 gap-3">
-        <label class="form-control">
-          <span class="label-text">起始日期</span>
+        <FormField legend="起始日期" label="选择开始日期">
           <input v-model="dateRange.start" type="date" class="input input-bordered" />
-        </label>
-        <label class="form-control">
-          <span class="label-text">结束日期</span>
+        </FormField>
+        <FormField legend="结束日期" label="选择截止日期">
           <input v-model="dateRange.end" type="date" class="input input-bordered" />
-        </label>
-        <label class="form-control">
-          <span class="label-text">日志级别</span>
+        </FormField>
+        <FormField legend="日志级别" label="选择级别">
           <select v-model="levelFilter" class="select select-bordered">
             <option value="all">全部</option>
             <option value="info">信息</option>
             <option value="warning">警告</option>
             <option value="error">错误</option>
           </select>
-        </label>
-        <label class="form-control">
-          <span class="label-text">关键字</span>
+        </FormField>
+        <FormField legend="关键字" label="操作人/动作/目标">
           <input v-model="query" type="text" placeholder="操作人/动作/目标" class="input input-bordered" />
-        </label>
+        </FormField>
       </div>
 
       <div class="flex gap-3">

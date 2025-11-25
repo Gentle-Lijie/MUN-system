@@ -19,7 +19,7 @@ function handleConfirm(country: string) {
             <p class="text-lg text-base-content/70">{{ lastCountry }}</p>
             <div class="flex gap-4">
                 <button class="btn btn-primary" @click="showPopup = true">打开弹窗</button>
-                <button class="btn" @click="$router.push('/management')">返回会议管理</button>
+                <button class="btn" @click="$router.push('/backend')">返回后台工作台</button>
             </div>
         </div>
         <PopupDelegate v-model="showPopup" @confirm="handleConfirm" />

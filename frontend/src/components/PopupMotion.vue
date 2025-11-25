@@ -36,102 +36,108 @@
                         </header>
                         <div class="flex flex-col gap-5">
                             <div class="grid gap-4">
-                                <fieldset v-if="activeMotion?.requires.country" class="fieldset mb-3">
-                                    <legend class="fieldset-legend text-base font-semibold mb-3">发起国家</legend>
-                                    <div class="grid grid-cols-[1fr_auto] gap-2">
-                                        <label class="input input-bordered flex items-center gap-2">
+                                <div v-if="activeMotion?.requires.country"
+                                    class="grid grid-cols-1 gap-3 lg:grid-cols-[1fr_auto]">
+                                    <FormField legend="发起国家" label="手动输入发起国家">
+                                        <div class="input input-bordered flex items-center gap-2">
                                             <svg class="h-[1.2em] opacity-50" xmlns="http://www.w3.org/2000/svg"
                                                 viewBox="0 0 24 24" fill="none">
-                                                <path
-                                                    d="M12 12c2.7 0 8 1.34 8 4v2a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2v-2c0-2.66 5.3-4 8-4z"
+                                                <path d="M12 12c2.7 0 8 1.34 8 4v2a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2v-2c0-2.66 5.3-4 8-4z"
                                                     stroke="currentColor" stroke-width="2" stroke-linecap="round"
                                                     stroke-linejoin="round" />
-                                                <circle cx="12" cy="7" r="4" stroke="currentColor" stroke-width="2"
-                                                    stroke-linecap="round" stroke-linejoin="round" />
+                                                <circle cx="12" cy="7" r="4" stroke="currentColor"
+                                                    stroke-width="2" stroke-linecap="round"
+                                                    stroke-linejoin="round" />
                                             </svg>
                                             <input v-model="formState.country" type="text" placeholder="请输入发起国家"
-                                                class="grow" required />
-                                        </label>
-                                        <select @change="onDelegateSelect" class="select select-bordered w-48">
+                                                class="grow bg-transparent focus:outline-none" required />
+                                        </div>
+                                    </FormField>
+                                    <FormField legend="代表名单" label="或从代表名单中选择">
+                                        <select @change="onDelegateSelect" class="select select-bordered w-full">
                                             <option value="">选择代表</option>
                                             <option v-for="delegate in delegates" :key="delegate.id"
                                                 :value="delegate.id">
                                                 {{ delegate.country }} - {{ delegate.userName }}
                                             </option>
                                         </select>
-                                    </div>
-                                </fieldset>
-                                <div v-if="activeMotion?.requires.unitTime && activeMotion?.requires.totalTime"
-                                    class="grid grid-cols-2 gap-4">
-                                    <fieldset class="fieldset mb-3">
-                                        <legend class="fieldset-legend text-base font-semibold mb-3">单位时间（分钟）</legend>
-                                        <label class="input input-bordered flex items-center gap-2">
-                                            <svg class="h-[1.2em] opacity-50" xmlns="http://www.w3.org/2000/svg"
-                                                viewBox="0 0 24 24" fill="none">
-                                                <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2" />
-                                                <polyline points="12,6 12,12 16,14" stroke="currentColor"
-                                                    stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
-                                            </svg>
-                                            <input v-model.number="formState.unitTime" type="number" min="1" max="120"
-                                                placeholder="例如 2" class="grow" required />
-                                        </label>
-                                    </fieldset>
-                                    <fieldset class="fieldset mb-3">
-                                        <legend class="fieldset-legend text-base font-semibold mb-3">总时间（分钟）</legend>
-                                        <label class="input input-bordered flex items-center gap-2">
-                                            <svg class="h-[1.2em] opacity-50" xmlns="http://www.w3.org/2000/svg"
-                                                viewBox="0 0 24 24" fill="none">
-                                                <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2" />
-                                                <polyline points="12,6 12,12 16,14" stroke="currentColor"
-                                                    stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
-                                            </svg>
-                                            <input v-model.number="formState.totalTime" type="number" min="1" max="480"
-                                                placeholder="例如 20" class="grow" required />
-                                        </label>
-                                    </fieldset>
+                                    </FormField>
                                 </div>
-                                <fieldset v-else-if="activeMotion?.requires.unitTime" class="fieldset mb-3">
-                                    <legend class="fieldset-legend text-base font-semibold">单位时间（分钟）</legend>
-                                    <label class="input input-bordered flex items-center gap-2">
+                                <template v-if="activeMotion?.requires.unitTime && activeMotion?.requires.totalTime">
+                                    <div class="grid grid-cols-1 gap-4 lg:grid-cols-2">
+                                        <FormField legend="单位时间（分钟）" label="每位发言代表的时间">
+                                            <div class="input input-bordered flex items-center gap-2">
+                                                <svg class="h-[1.2em] opacity-50" xmlns="http://www.w3.org/2000/svg"
+                                                    viewBox="0 0 24 24" fill="none">
+                                                    <circle cx="12" cy="12" r="10" stroke="currentColor"
+                                                        stroke-width="2" />
+                                                    <polyline points="12,6 12,12 16,14" stroke="currentColor"
+                                                        stroke-width="2" stroke-linecap="round"
+                                                        stroke-linejoin="round" />
+                                                </svg>
+                                                <input v-model.number="formState.unitTime" type="number" min="1"
+                                                    max="120" placeholder="例如 2"
+                                                    class="grow bg-transparent focus:outline-none" required />
+                                            </div>
+                                        </FormField>
+                                        <FormField legend="总时间（分钟）" label="整个动议的总时长">
+                                            <div class="input input-bordered flex items-center gap-2">
+                                                <svg class="h-[1.2em] opacity-50" xmlns="http://www.w3.org/2000/svg"
+                                                    viewBox="0 0 24 24" fill="none">
+                                                    <circle cx="12" cy="12" r="10" stroke="currentColor"
+                                                        stroke-width="2" />
+                                                    <polyline points="12,6 12,12 16,14" stroke="currentColor"
+                                                        stroke-width="2" stroke-linecap="round"
+                                                        stroke-linejoin="round" />
+                                                </svg>
+                                                <input v-model.number="formState.totalTime" type="number" min="1"
+                                                    max="480" placeholder="例如 20"
+                                                    class="grow bg-transparent focus:outline-none" required />
+                                            </div>
+                                        </FormField>
+                                    </div>
+                                </template>
+                                <FormField v-else-if="activeMotion?.requires.unitTime" legend="单位时间（分钟）"
+                                    label="每位发言代表的时间">
+                                    <div class="input input-bordered flex items-center gap-2">
                                         <svg class="h-[1.2em] opacity-50" xmlns="http://www.w3.org/2000/svg"
                                             viewBox="0 0 24 24" fill="none">
-                                            <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2" />
-                                            <polyline points="12,6 12,12 16,14" stroke="currentColor" stroke-width="2"
-                                                stroke-linecap="round" stroke-linejoin="round" />
+                                            <circle cx="12" cy="12" r="10" stroke="currentColor"
+                                                stroke-width="2" />
+                                            <polyline points="12,6 12,12 16,14" stroke="currentColor"
+                                                stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
                                         </svg>
                                         <input v-model.number="formState.unitTime" type="number" min="1" max="120"
-                                            placeholder="例如 2" class="grow" required />
-                                    </label>
-                                </fieldset>
-                                <fieldset v-else-if="activeMotion?.requires.totalTime" class="fieldset mb-3">
-                                    <legend class="fieldset-legend text-base font-semibold">总时间（分钟）</legend>
-                                    <label class="input input-bordered flex items-center gap-2">
+                                            placeholder="例如 2" class="grow bg-transparent focus:outline-none" required />
+                                    </div>
+                                </FormField>
+                                <FormField v-else-if="activeMotion?.requires.totalTime" legend="总时间（分钟）"
+                                    label="整个动议的总时长">
+                                    <div class="input input-bordered flex items-center gap-2">
                                         <svg class="h-[1.2em] opacity-50" xmlns="http://www.w3.org/2000/svg"
                                             viewBox="0 0 24 24" fill="none">
-                                            <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2" />
-                                            <polyline points="12,6 12,12 16,14" stroke="currentColor" stroke-width="2"
-                                                stroke-linecap="round" stroke-linejoin="round" />
+                                            <circle cx="12" cy="12" r="10" stroke="currentColor"
+                                                stroke-width="2" />
+                                            <polyline points="12,6 12,12 16,14" stroke="currentColor"
+                                                stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
                                         </svg>
                                         <input v-model.number="formState.totalTime" type="number" min="1" max="480"
-                                            placeholder="例如 20" class="grow" required />
-                                    </label>
-                                </fieldset>
-                                <fieldset class="fieldset mb-3">
-                                    <legend class="fieldset-legend text-base font-semibold mb-3">附加说明（可选）</legend>
+                                            placeholder="例如 20" class="grow bg-transparent focus:outline-none" required />
+                                    </div>
+                                </FormField>
+                                <FormField legend="附加说明（可选）" label="补充主持要点或文件信息">
                                     <textarea v-model="formState.notes" class="textarea textarea-bordered text-base"
                                         rows="4" placeholder="输入补充说明或主持要点"></textarea>
-                                </fieldset>
+                                </FormField>
                                 <button v-if="activeMotion?.id === 'reading' || activeMotion?.id === 'voting-doc'"
                                     type="button" class="btn btn-outline btn-lg text-lg mb-3"
                                     @click="showFileSelect = true">关联文件</button>
 
-                                <fieldset class="fieldset mb-3">
-                                    <label class="label cursor-pointer justify-start gap-4">
-                                        <input type="checkbox" v-model="formState.triggerRollCall" class="checkbox" />
-                                        <span class="label-text text-lg">动议通过后发起点名</span>
-                                    </label>
-                                    <p class="fieldset-label text-sm text-base-content/70">勾选后，动议获得通过时会自动触发代表点名</p>
-                                </fieldset>
+                                <FormField legend="自动发起点名" label="动议通过后立即点名"
+                                    description="勾选后，动议获得通过时会自动触发代表点名"
+                                    :label-class="'flex items-center justify-between gap-4'">
+                                    <input type="checkbox" v-model="formState.triggerRollCall" class="checkbox" />
+                                </FormField>
                             </div>
                             <div class="grid gap-4 lg:grid-cols-[4fr_4fr_2fr]">
                                 <button type="button" class="btn btn-success btn-lg text-lg"
@@ -156,6 +162,7 @@
 <script setup lang="ts">
 import { computed, reactive, ref, watch } from 'vue'
 import PopupFileSelect from '@/components/PopupFileSelect.vue'
+import FormField from '@/components/common/FormField.vue'
 import { API_BASE } from '@/services/api'
 import type { FileReference } from '@/services/api'
 

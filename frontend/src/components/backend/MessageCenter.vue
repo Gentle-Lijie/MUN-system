@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, onMounted, reactive, ref, watch } from 'vue'
+import FormField from '@/components/common/FormField.vue'
 import { api, type MessageListResponse, type MessageRecord, type MessageTarget } from '@/services/api'
 
 type TargetFilter = MessageTarget | 'all'
@@ -213,16 +214,14 @@ onMounted(() => {
 
         <section class="rounded-2xl border border-base-200 bg-base-100 p-4 space-y-4">
             <div class="grid gap-3 md:grid-cols-4">
-                <label class="form-control">
-                    <span class="label-text">消息类型</span>
+                <FormField legend="消息类型" label="筛选目标">
                     <select v-model="filters.target" class="select select-bordered select-sm" @change="applyFilters">
                         <option v-for="option in targetFilterOptions" :key="option.value" :value="option.value">
                             {{ option.label }}
                         </option>
                     </select>
-                </label>
-                <label class="form-control">
-                    <span class="label-text">所属会场</span>
+                </FormField>
+                <FormField legend="所属会场" label="限定可选会场">
                     <select v-model.number="filters.committeeId" class="select select-bordered select-sm"
                         @change="applyFilters">
                         <option :value="0">全部会场</option>
@@ -230,15 +229,14 @@ onMounted(() => {
                             {{ committee.name }} ({{ committee.code }})
                         </option>
                     </select>
-                </label>
-                <label class="form-control md:col-span-2">
-                    <span class="label-text">关键词</span>
-                    <div class="join">
+                </FormField>
+                <FormField legend="关键词" label="输入内容关键词" fieldsetClass="md:col-span-2">
+                    <div class="join w-full">
                         <input v-model="filters.search" type="text" class="input input-bordered join-item input-sm"
                             placeholder="输入内容关键词" @keyup.enter="applyFilters" />
                         <button class="btn btn-outline join-item btn-sm" @click="applyFilters">搜索</button>
                     </div>
-                </label>
+                </FormField>
             </div>
 
             <div class="overflow-x-auto rounded-xl border border-base-200">
@@ -292,17 +290,16 @@ onMounted(() => {
             <div class="modal-box space-y-4">
                 <h3 class="text-lg font-semibold">发送消息</h3>
                 <div class="grid gap-3">
-                    <label class="form-control">
-                        <span class="label-text">消息类型</span>
+                    <FormField legend="消息类型" label="选择发送通道">
                         <select v-model="sendForm.target" class="select select-bordered">
                             <option v-for="option in availableTargetOptions" :key="option.value" :value="option.value">
                                 {{ option.label }}
                             </option>
                         </select>
-                    </label>
+                    </FormField>
 
-                    <label v-if="sendForm.target === 'committee' || sendForm.target === 'dias'" class="form-control">
-                        <span class="label-text">选择会场</span>
+                    <FormField v-if="sendForm.target === 'committee' || sendForm.target === 'dias'" legend="选择会场"
+                        label="请选择目标会场">
                         <select class="select select-bordered" :value="sendForm.targetId ?? 0"
                             @change="handleCommitteeChange">
                             <option :value="0">请选择会场</option>
@@ -310,10 +307,9 @@ onMounted(() => {
                                 {{ committee.name }} ({{ committee.code }})
                             </option>
                         </select>
-                    </label>
+                    </FormField>
 
-                    <label v-if="sendForm.target === 'delegate'" class="form-control">
-                        <span class="label-text">选择代表</span>
+                    <FormField v-if="sendForm.target === 'delegate'" legend="选择代表" label="指定某位代表">
                         <select class="select select-bordered" :value="sendForm.targetId ?? 0"
                             @change="handleDelegateChange">
                             <option :value="0">请选择代表</option>
@@ -321,13 +317,12 @@ onMounted(() => {
                                 {{ delegate.name }} · {{ delegate.committeeName || '未分配' }}
                             </option>
                         </select>
-                    </label>
+                    </FormField>
 
-                    <label class="form-control">
-                        <span class="label-text">消息内容</span>
+                    <FormField legend="消息内容" label="请输入要发送的通知">
                         <textarea v-model="sendForm.content" class="textarea textarea-bordered" rows="4"
                             placeholder="输入要发送的通知"></textarea>
-                    </label>
+                    </FormField>
 
                     <p v-if="formError" class="text-sm text-error">{{ formError }}</p>
                 </div>

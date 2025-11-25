@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, reactive, ref, watch } from 'vue'
+import FormField from '@/components/common/FormField.vue'
 
 type CommitteeStatus = 'preparation' | 'in_session' | 'paused' | 'closed'
 
@@ -280,17 +281,24 @@ fetchUsers()
     <section class="grid gap-6 xl:grid-cols-[0.6fr,1fr]">
       <div class="space-y-4">
         <div class="flex flex-wrap gap-3">
-          <label class="input input-bordered flex items-center gap-2 grow min-w-[14rem]">
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" class="h-4 w-4 opacity-50" fill="currentColor">
-              <path
-                d="M11 4a7 7 0 015.618 11.16l3.11 3.11a1 1 0 01-1.414 1.415l-3.11-3.112A7 7 0 1111 4zm0 2a5 5 0 100 10 5 5 0 000-10z" />
-            </svg>
-            <input v-model="filters.keyword" type="text" class="grow" placeholder="按会场/地点/主席团搜索" />
-          </label>
-          <select v-model="filters.status" class="select select-bordered w-40">
-            <option value="all">全部状态</option>
-            <option v-for="item in statusOptions" :key="item.value" :value="item.value">{{ item.label }}</option>
-          </select>
+          <FormField legend="关键词搜索" label="按会场/地点/主席团搜索"
+            fieldsetClass="grow min-w-[14rem]">
+            <div class="input input-bordered flex items-center gap-2">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" class="h-4 w-4 opacity-50"
+                fill="currentColor">
+                <path
+                  d="M11 4a7 7 0 015.618 11.16l3.11 3.11a1 1 0 01-1.414 1.415l-3.11-3.112A7 7 0 1111 4zm0 2a5 5 0 100 10 5 5 0 000-10z" />
+              </svg>
+              <input v-model="filters.keyword" type="text" class="grow bg-transparent focus:outline-none"
+                placeholder="按会场/地点/主席团搜索" />
+            </div>
+          </FormField>
+          <FormField legend="状态筛选" label="选择会场状态" fieldsetClass="w-40">
+            <select v-model="filters.status" class="select select-bordered w-full">
+              <option value="all">全部状态</option>
+              <option v-for="item in statusOptions" :key="item.value" :value="item.value">{{ item.label }}</option>
+            </select>
+          </FormField>
           <!-- <button class="btn btn-outline">导出配置</button> -->
         </div>
 
@@ -351,24 +359,20 @@ fetchUsers()
             <button class="btn btn-sm" @click="handleSaveBaseInfo">保存</button>
           </div>
           <div class="grid gap-3 md:grid-cols-2">
-            <label class="form-control">
-              <span class="label-text">会场名称</span>
+            <FormField legend="会场名称" label="请输入会场名称">
               <input v-model="selectedCommittee.name" type="text" class="input input-bordered" />
-            </label>
-            <label class="form-control">
-              <span class="label-text">地点/房间</span>
+            </FormField>
+            <FormField legend="地点/房间" label="填写具体地点">
               <input v-model="selectedCommittee.venue" type="text" class="input input-bordered" />
-            </label>
-            <label class="form-control">
-              <span class="label-text">状态</span>
+            </FormField>
+            <FormField legend="状态" label="选择当前状态">
               <select v-model="selectedCommittee.status" class="select select-bordered">
                 <option v-for="item in statusOptions" :key="item.value" :value="item.value">{{ item.label }}</option>
               </select>
-            </label>
-            <label class="form-control">
-              <span class="label-text">容纳人数</span>
+            </FormField>
+            <FormField legend="容纳人数" label="输入最大容量">
               <input v-model.number="selectedCommittee.capacity" type="number" min="10" class="input input-bordered" />
-            </label>
+            </FormField>
           </div>
         </section>
 
@@ -402,13 +406,24 @@ fetchUsers()
             </table>
           </div>
           <form class="grid lg:grid-cols-4 gap-3" @submit.prevent="handleAddSession">
-            <input v-model="sessionForm.topic" type="text" placeholder="议题/阶段" class="input input-bordered" />
-            <input v-model="sessionForm.chair" type="text" placeholder="主持主席团" class="input input-bordered" />
-            <input v-model="sessionForm.start" type="datetime-local" class="input input-bordered" />
-            <label class="input input-bordered flex items-center gap-2">
-              <span class="text-xs">分钟</span>
-              <input v-model.number="sessionForm.durationMinutes" type="number" min="5" class="grow" />
-            </label>
+            <FormField legend="议题/阶段" label="填写议题" fieldsetClass="w-full">
+              <input v-model="sessionForm.topic" type="text" placeholder="议题/阶段"
+                class="input input-bordered" />
+            </FormField>
+            <FormField legend="主持主席团" label="负责主持的主席团" fieldsetClass="w-full">
+              <input v-model="sessionForm.chair" type="text" placeholder="主持主席团"
+                class="input input-bordered" />
+            </FormField>
+            <FormField legend="开始时间" label="选择开始时间" fieldsetClass="w-full">
+              <input v-model="sessionForm.start" type="datetime-local" class="input input-bordered" />
+            </FormField>
+            <FormField legend="时长（分钟）" label="设置议程时长" fieldsetClass="w-full">
+              <div class="input input-bordered flex items-center gap-2">
+                <span class="text-xs">分钟</span>
+                <input v-model.number="sessionForm.durationMinutes" type="number" min="5"
+                  class="grow bg-transparent focus:outline-none" />
+              </div>
+            </FormField>
             <button type="submit" class="btn btn-primary lg:col-span-4">添加议程</button>
           </form>
         </section>
@@ -434,17 +449,15 @@ fetchUsers()
             <button class="btn btn-sm btn-primary" @click="handleSaveTimeConfig">保存</button>
           </div>
           <div class="space-y-3">
-            <label class="form-control">
-              <span class="label-text">现实时间锚点</span>
+            <FormField legend="现实时间锚点" label="设置与真实时间的对应" fieldsetClass="w-full">
               <div class="flex gap-2">
                 <input v-model="timeForm.realTimeAnchor" type="datetime-local" class="input input-bordered flex-1" />
                 <button type="button" class="btn btn-outline"
                   @click="timeForm.realTimeAnchor = new Date().toISOString().slice(0, 16)">设为现在</button>
               </div>
-            </label>
-            <label class="form-control">
-              <span class="label-text">时间流速</span>
-              <div class="flex gap-2 items-center">
+            </FormField>
+            <FormField legend="时间流速" label="选择或自定义流速" fieldsetClass="w-full">
+              <div class="flex gap-2 items-center flex-wrap">
                 <div class="join">
                   <button type="button" class="btn join-item" :class="{ 'btn-active': timeForm.flowSpeed === 3 }"
                     @click="timeForm.flowSpeed = 3">3x</button>
@@ -455,9 +468,9 @@ fetchUsers()
                 </div>
                 <span class="text-sm">或自定义:</span>
                 <input v-model.number="timeForm.flowSpeed" type="number" min="0.1" step="0.1"
-                  class="input input-bordered w-20" />
+                  class="input input-bordered w-24" />
               </div>
-            </label>
+            </FormField>
           </div>
         </section>
       </div>
@@ -471,13 +484,18 @@ fetchUsers()
   <dialog :open="showDaisModal" class="modal">
     <div class="modal-box max-w-2xl">
       <h3 class="font-bold text-lg mb-4">选择主席团成员</h3>
-      <input v-model="daisSearch" type="text" placeholder="搜索用户" class="input input-bordered w-full mb-4" />
-      <div class="max-h-60 overflow-y-auto space-y-2">
-        <label v-for="user in filteredUsers" :key="user.id" class="flex items-center gap-2 p-2 border rounded">
-          <input type="checkbox" v-model="selectedUserIds" :value="user.id" class="checkbox" />
-          <span>{{ user.name }} ({{ user.email }})</span>
-        </label>
-      </div>
+      <FormField legend="搜索成员" label="按姓名或邮箱筛选" fieldsetClass="mb-4">
+        <input v-model="daisSearch" type="text" placeholder="搜索用户" class="input input-bordered w-full" />
+      </FormField>
+      <fieldset class="fieldset">
+        <legend class="fieldset-legend text-base font-semibold mb-3">候选成员列表</legend>
+        <div class="max-h-60 overflow-y-auto space-y-2">
+          <label v-for="user in filteredUsers" :key="user.id" class="flex items-center gap-2 p-2 border rounded">
+            <input type="checkbox" v-model="selectedUserIds" :value="user.id" class="checkbox" />
+            <span>{{ user.name }} ({{ user.email }})</span>
+          </label>
+        </div>
+      </fieldset>
       <div class="modal-action">
         <button @click="showDaisModal = false; selectedUserIds = []" class="btn">取消</button>
         <button @click="confirmDaisSelection" class="btn btn-primary">确定</button>

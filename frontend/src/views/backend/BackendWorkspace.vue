@@ -22,10 +22,10 @@ const featureGroups: FeatureGroup[] = [
         title: '管理功能',
         subtitle: '会务基础配置与权限控制',
         items: [
-            { label: '用户管理', description: '账号、权限、登录日志', to: '/backend/management/users' },
-            { label: '会场管理', description: '会场配置与会期时间', to: '/backend/management/venues' },
-            { label: '代表管理', description: '代表导入、国家分配、点名', to: '/backend/management/delegates' },
-            { label: '日志管理', description: '操作与审计记录', to: '/backend/management/logs' },
+            { label: '用户管理', description: '账号、权限、登录日志', to: '/backend/users' },
+            { label: '会场管理', description: '会场配置与会期时间', to: '/backend/venues' },
+            { label: '代表管理', description: '代表导入、国家分配、点名', to: '/backend/delegates' },
+            { label: '日志管理', description: '操作与审计记录', to: '/backend/logs' },
         ],
     },
     {
@@ -56,10 +56,10 @@ const featureGroups: FeatureGroup[] = [
 const route = useRoute()
 const activePath = computed(() => route.path)
 const routePermissionMap: Record<string, string | string[]> = {
-    '/backend/management/users': 'users:manage',
-    '/backend/management/venues': ['users:manage', 'presidium:manage'],
-    '/backend/management/delegates': 'delegates:manage',
-    '/backend/management/logs': 'logs:read',
+    '/backend/users': 'users:manage',
+    '/backend/venues': ['users:manage', 'presidium:manage'],
+    '/backend/delegates': 'delegates:manage',
+    '/backend/logs': 'logs:read',
     '/backend/presidium/file-approval': 'presidium:manage',
     '/backend/presidium/file-management': 'presidium:manage',
     '/backend/presidium/crisis': 'crisis:dispatch',

@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { onMounted, reactive, ref } from 'vue'
+import FormField from '@/components/common/FormField.vue'
 import { api, type FileSubmission, API_BASE } from '@/services/api'
 
 const documents = ref<FileSubmission[]>([])
@@ -217,12 +218,10 @@ onMounted(fetchDocuments)
           <form method="dialog" class="modal-box">
             <h3 class="font-semibold text-lg">编辑文件</h3>
             <div class="mt-3 space-y-3">
-              <label class="form-control">
-                <span class="label-text">文件标题</span>
+              <FormField legend="文件标题" label="请输入标题">
                 <input v-model="editForm.title" type="text" class="input input-bordered" required />
-              </label>
-              <label class="form-control">
-                <span class="label-text">类型</span>
+              </FormField>
+              <FormField legend="文件类型" label="选择类别">
                 <select v-model="editForm.type" class="select select-bordered">
                   <option value="position_paper">立场文件</option>
                   <option value="working_paper">工作文件</option>
@@ -230,22 +229,19 @@ onMounted(fetchDocuments)
                   <option value="press_release">新闻稿</option>
                   <option value="other">其他</option>
                 </select>
-              </label>
-              <label class="form-control">
-                <span class="label-text">上传新附件（可选）</span>
+              </FormField>
+              <FormField legend="更新附件" label="可选上传新附件">
                 <input type="file" class="file-input file-input-bordered w-full" @change="onEditFileChange" />
-              </label>
-              <label class="form-control">
-                <span class="label-text">描述</span>
+              </FormField>
+              <FormField legend="描述" label="补充说明">
                 <textarea v-model="editForm.description" class="textarea textarea-bordered" rows="3"></textarea>
-              </label>
-              <label class="form-control">
-                <span class="label-text">状态</span>
+              </FormField>
+              <FormField legend="提交状态" label="草稿或提交">
                 <select v-model="editForm.status" class="select select-bordered">
                   <option value="draft">草稿</option>
                   <option value="submitted">提交</option>
                 </select>
-              </label>
+              </FormField>
             </div>
             <div class="modal-action">
               <button type="button" class="btn" @click.prevent="closeEditModal">取消</button>
@@ -258,12 +254,10 @@ onMounted(fetchDocuments)
       <!-- 编辑表单 -->
       <div v-if="editingDocId !== null && !showEditModal" class="border border-base-200 rounded-2xl p-4 space-y-3">
         <h3 class="font-semibold">编辑文件</h3>
-        <label class="form-control">
-          <span class="label-text">文件标题</span>
+        <FormField legend="文件标题" label="请输入标题">
           <input v-model="editForm.title" type="text" class="input input-bordered" placeholder="文件标题" required />
-        </label>
-        <label class="form-control">
-          <span class="label-text">类型</span>
+        </FormField>
+        <FormField legend="文件类型" label="选择类别">
           <select v-model="editForm.type" class="select select-bordered">
             <option value="position_paper">立场文件</option>
             <option value="working_paper">工作文件</option>
@@ -271,22 +265,19 @@ onMounted(fetchDocuments)
             <option value="press_release">新闻稿</option>
             <option value="other">其他</option>
           </select>
-        </label>
-        <label class="form-control">
-          <span class="label-text">上传新附件（可选）</span>
+        </FormField>
+        <FormField legend="上传新附件" label="可选">
           <input type="file" class="file-input file-input-bordered w-full" @change="onEditFileChange" />
-        </label>
-        <label class="form-control">
-          <span class="label-text">描述</span>
+        </FormField>
+        <FormField legend="描述" label="补充说明">
           <textarea v-model="editForm.description" class="textarea textarea-bordered" rows="3"></textarea>
-        </label>
-        <label class="form-control">
-          <span class="label-text">状态</span>
+        </FormField>
+        <FormField legend="提交状态" label="草稿或提交">
           <select v-model="editForm.status" class="select select-bordered">
             <option value="draft">草稿</option>
             <option value="submitted">提交</option>
           </select>
-        </label>
+        </FormField>
         <div class="flex gap-2">
           <button class="btn btn-primary flex-1" @click.prevent="submitEditDocument">保存更改</button>
           <button class="btn btn-outline" @click.prevent="cancelEditDocument">取消</button>
@@ -295,12 +286,10 @@ onMounted(fetchDocuments)
 
       <form class="border border-base-200 rounded-2xl p-4 space-y-3" @submit.prevent="uploadDocument">
         <h3 class="font-semibold">上传文件</h3>
-        <label class="form-control">
-          <span class="label-text">文件标题</span>
+        <FormField legend="文件标题" label="请输入标题">
           <input v-model="uploadForm.title" type="text" class="input input-bordered" placeholder="文件标题" required />
-        </label>
-        <label class="form-control">
-          <span class="label-text">类型</span>
+        </FormField>
+        <FormField legend="文件类型" label="选择类别">
           <select v-model="uploadForm.type" class="select select-bordered">
             <option value="position_paper">立场文件</option>
             <option value="working_paper">工作文件</option>
@@ -308,15 +297,13 @@ onMounted(fetchDocuments)
             <option value="press_release">新闻稿</option>
             <option value="other">其他</option>
           </select>
-        </label>
-        <label class="form-control">
-          <span class="label-text">上传附件</span>
+        </FormField>
+        <FormField legend="上传附件" label="请选择文件">
           <input type="file" class="file-input file-input-bordered w-full" @change="handleFileChange" required />
-        </label>
-        <label class="form-control">
-          <span class="label-text">描述</span>
+        </FormField>
+        <FormField legend="描述" label="可选补充说明">
           <textarea v-model="uploadForm.description" class="textarea textarea-bordered" rows="3"></textarea>
-        </label>
+        </FormField>
         <button type="submit" class="btn btn-primary w-full">上传文件</button>
       </form>
     </section>

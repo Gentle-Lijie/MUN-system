@@ -47,7 +47,7 @@ function handleMotionFail(payload: {
             </div>
             <div class="flex flex-wrap gap-4">
                 <button class="btn btn-primary btn-lg" @click="showMotionModal = true">打开动议弹窗</button>
-                <button class="btn btn-ghost btn-lg" @click="$router.push('/management')">返回会议管理</button>
+                <button class="btn btn-ghost btn-lg" @click="$router.push('/backend')">返回后台工作台</button>
             </div>
         </div>
         <PopupMotion v-model="showMotionModal" @pass="handleMotionPass" @fail="handleMotionFail" />

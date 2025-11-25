@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { reactive } from 'vue'
+import FormField from '@/components/common/FormField.vue'
 
 const profile = reactive({
   name: '王雨',
@@ -28,46 +29,38 @@ const updateProfile = () => {
     <section class="grid gap-6 xl:grid-cols-[1.2fr,1fr]">
       <form class="border border-base-200 rounded-2xl p-4 space-y-3" @submit.prevent="updateProfile">
         <h3 class="font-semibold">基础信息</h3>
-        <label class="form-control">
-          <span class="label-text">姓名</span>
+        <FormField legend="姓名" label="代表姓名">
           <input v-model="profile.name" type="text" class="input input-bordered" />
-        </label>
-        <label class="form-control">
-          <span class="label-text">代表国家</span>
+        </FormField>
+        <FormField legend="代表国家" label="所属国家">
           <input v-model="profile.country" type="text" class="input input-bordered" />
-        </label>
+        </FormField>
         <div class="grid md:grid-cols-2 gap-3">
-          <label class="form-control">
-            <span class="label-text">所属会场</span>
+          <FormField legend="所属会场" label="填写会场">
             <input v-model="profile.committee" type="text" class="input input-bordered" />
-          </label>
-          <label class="form-control">
-            <span class="label-text">集团</span>
+          </FormField>
+          <FormField legend="集团" label="如 P5/G77">
             <input v-model="profile.bloc" type="text" class="input input-bordered" />
-          </label>
+          </FormField>
         </div>
         <div class="grid md:grid-cols-2 gap-3">
-          <label class="form-control">
-            <span class="label-text">邮箱</span>
+          <FormField legend="邮箱" label="联系方式">
             <input v-model="profile.email" type="email" class="input input-bordered" />
-          </label>
-          <label class="form-control">
-            <span class="label-text">电话</span>
+          </FormField>
+          <FormField legend="电话" label="手机或座机">
             <input v-model="profile.phone" type="text" class="input input-bordered" />
-          </label>
+          </FormField>
         </div>
-        <label class="form-control">
-          <span class="label-text">出勤状态</span>
+        <FormField legend="出勤状态" label="选择当前状态">
           <select v-model="profile.attendance" class="select select-bordered">
             <option value="已签到">已签到</option>
             <option value="迟到">迟到</option>
             <option value="缺席">缺席</option>
           </select>
-        </label>
-        <label class="form-control">
-          <span class="label-text">备注</span>
+        </FormField>
+        <FormField legend="备注" label="可选备注">
           <textarea v-model="profile.notes" class="textarea textarea-bordered" rows="4"></textarea>
-        </label>
+        </FormField>
         <button class="btn btn-primary w-full" type="submit">保存更改</button>
       </form>
 

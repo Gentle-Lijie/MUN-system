@@ -18,7 +18,7 @@ function handleFileSelect(file: FileReference) {
             <p class="text-lg text-base-content/70">用于动议关联文件的独立页面。</p>
             <div class="flex gap-4">
                 <button class="btn btn-primary" @click="showFileSelect = true">打开文件选择弹窗</button>
-                <button class="btn" @click="$router.push('/management')">返回会议管理</button>
+                <button class="btn" @click="$router.push('/backend')">返回后台工作台</button>
             </div>
         </div>
         <PopupFileSelect v-model="showFileSelect" @select="handleFileSelect" />

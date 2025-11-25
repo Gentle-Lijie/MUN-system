@@ -1,7 +1,6 @@
 import { createRouter, createWebHistory } from 'vue-router'
 
 const DisplayBoard = () => import('@/views/DisplayBoard.vue')
-const ManagementConsole = () => import('@/views/ManagementConsole.vue')
 const MiniWindow = () => import('@/views/MiniWindow.vue')
 const MotionLauncher = () => import('@/views/MotionLauncher.vue')
 const FileSelect = () => import('@/views/FileSelect.vue')
@@ -46,12 +45,6 @@ const router = createRouter({
       meta: { title: '会议显示大屏' },
     },
     {
-      path: '/management',
-      name: 'management',
-      component: ManagementConsole,
-      meta: { title: '会议管理面板' },
-    },
-    {
       path: '/mini-window',
       name: 'mini-window',
       component: MiniWindow,
@@ -87,29 +80,29 @@ const router = createRouter({
       children: [
         {
           path: '',
-          redirect: '/backend/management/users',
+          redirect: '/backend/users',
         },
         {
-          path: 'management/users',
-          name: 'backend-management-users',
+          path: 'users',
+          name: 'backend-users',
           component: UserManagementView,
           meta: { title: '用户管理' },
         },
         {
-          path: 'management/venues',
-          name: 'backend-management-venues',
+          path: 'venues',
+          name: 'backend-venues',
           component: VenueManagementView,
           meta: { title: '会场管理' },
         },
         {
-          path: 'management/delegates',
-          name: 'backend-management-delegates',
+          path: 'delegates',
+          name: 'backend-delegates',
           component: DelegateManagementView,
           meta: { title: '代表管理' },
         },
         {
-          path: 'management/logs',
-          name: 'backend-management-logs',
+          path: 'logs',
+          name: 'backend-logs',
           component: LogManagementView,
           meta: { title: '日志管理' },
         },

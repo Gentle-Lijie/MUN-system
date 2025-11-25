@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { RouterLink, RouterView, useRoute, useRouter } from 'vue-router'
 import { ref, onMounted, reactive, computed, watch } from 'vue'
+import FormField from '@/components/common/FormField.vue'
 
 type UserProfile = {
   username: string
@@ -9,7 +10,6 @@ type UserProfile = {
 
 const navItems = [
   { label: '欢迎', to: '/welcome' },
-  // { label: '会议管理', to: '/management' },
   { label: '后台功能', to: '/backend' },
   { label: '会场小窗口', to: '/mini-window' },
 ]
@@ -293,26 +293,31 @@ watch(needsLogin, (newVal) => {
     <div class="modal-box space-y-4">
       <h3 class="font-bold text-lg">账号登录</h3>
       <form class="space-y-4" @submit.prevent="handleLogin">
-        <fieldset class="fieldset space-y-3 border border-base-300 rounded-box p-4">
-          <legend class="fieldset-legend">登录信息</legend>
-          <label class="input input-bordered flex items-center gap-2">
-            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
-              stroke="currentColor" class="w-5 h-5">
-              <path stroke-linecap="round" stroke-linejoin="round"
-                d="M3 8l7.89 4.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-            </svg>
-            <input type="email" class="grow" placeholder="邮箱" v-model="loginForm.email" required />
-          </label>
-          <label class="input input-bordered flex items-center gap-2">
-            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
-              stroke="currentColor" class="w-5 h-5">
-              <path stroke-linecap="round" stroke-linejoin="round"
-                d="M16.5 10.125V6.75a4.5 4.5 0 10-9 0v3.375M18.75 10.125h-13.5A1.125 1.125 0 004.125 11.25v8.625c0 .621.504 1.125 1.125 1.125h13.5a1.125 1.125 0 001.125-1.125V11.25a1.125 1.125 0 00-1.125-1.125z" />
-            </svg>
-            <input type="password" class="grow" placeholder="密码" v-model="loginForm.password" required />
-          </label>
-          <p class="fieldset-label">请输入会议后台发放的邮箱和密码</p>
-        </fieldset>
+        <div class="space-y-4">
+          <FormField legend="登录邮箱" label="邮箱" description="请输入会议后台发放的邮箱和密码"
+            fieldset-class="border border-base-300 rounded-box p-4">
+            <div class="input input-bordered flex items-center gap-2">
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
+                stroke="currentColor" class="w-5 h-5">
+                <path stroke-linecap="round" stroke-linejoin="round"
+                  d="M3 8l7.89 4.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+              </svg>
+              <input type="email" class="grow bg-transparent focus:outline-none" placeholder="输入邮箱"
+                v-model="loginForm.email" required />
+            </div>
+          </FormField>
+          <FormField legend="登录密码" label="密码" fieldset-class="border border-base-300 rounded-box p-4">
+            <div class="input input-bordered flex items-center gap-2">
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
+                stroke="currentColor" class="w-5 h-5">
+                <path stroke-linecap="round" stroke-linejoin="round"
+                  d="M16.5 10.125V6.75a4.5 4.5 0 10-9 0v3.375M18.75 10.125h-13.5A1.125 1.125 0 004.125 11.25v8.625c0 .621.504 1.125 1.125 1.125h13.5a1.125 1.125 0 001.125-1.125V11.25a1.125 1.125 0 00-1.125-1.125z" />
+              </svg>
+              <input type="password" class="grow bg-transparent focus:outline-none" placeholder="输入密码"
+                v-model="loginForm.password" required />
+            </div>
+          </FormField>
+        </div>
         <div v-if="loginError" class="alert alert-error alert-soft text-sm">
           <span>{{ loginError }}</span>
         </div>
@@ -344,36 +349,44 @@ watch(needsLogin, (newVal) => {
     <div class="modal-box space-y-4">
       <h3 class="font-bold text-lg">修改密码</h3>
       <form class="space-y-4" @submit.prevent="handleChangePasswordSubmit">
-        <fieldset class="fieldset space-y-3 border border-base-300 rounded-box p-4">
-          <legend class="fieldset-legend">密码信息</legend>
-          <label class="input input-bordered flex items-center gap-2">
-            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
-              stroke="currentColor" class="w-5 h-5">
-              <path stroke-linecap="round" stroke-linejoin="round"
-                d="M16.5 10.125V6.75a4.5 4.5 0 10-9 0v3.375M18.75 10.125h-13.5A1.125 1.125 0 004.125 11.25v8.625c0 .621.504 1.125 1.125 1.125h13.5a1.125 1.125 0 001.125-1.125V11.25a1.125 1.125 0 00-1.125-1.125z" />
-            </svg>
-            <input type="password" class="grow" placeholder="当前密码" v-model="changePasswordForm.currentPassword"
-              required />
-          </label>
-          <label class="input input-bordered flex items-center gap-2">
-            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
-              stroke="currentColor" class="w-5 h-5">
-              <path stroke-linecap="round" stroke-linejoin="round"
-                d="M16.5 10.125V6.75a4.5 4.5 0 10-9 0v3.375M18.75 10.125h-13.5A1.125 1.125 0 004.125 11.25v8.625c0 .621.504 1.125 1.125 1.125h13.5a1.125 1.125 0 001.125-1.125V11.25a1.125 1.125 0 00-1.125-1.125z" />
-            </svg>
-            <input type="password" class="grow" placeholder="新密码" v-model="changePasswordForm.newPassword" required />
-          </label>
-          <label class="input input-bordered flex items-center gap-2">
-            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
-              stroke="currentColor" class="w-5 h-5">
-              <path stroke-linecap="round" stroke-linejoin="round"
-                d="M16.5 10.125V6.75a4.5 4.5 0 10-9 0v3.375M18.75 10.125h-13.5A1.125 1.125 0 004.125 11.25v8.625c0 .621.504 1.125 1.125 1.125h13.5a1.125 1.125 0 001.125-1.125V11.25a1.125 1.125 0 00-1.125-1.125z" />
-            </svg>
-            <input type="password" class="grow" placeholder="确认新密码" v-model="changePasswordForm.confirmPassword"
-              required />
-          </label>
-          <p class="fieldset-label">新密码至少需要6个字符</p>
-        </fieldset>
+        <div class="space-y-4">
+          <FormField legend="当前密码" label="输入当前密码"
+            fieldset-class="border border-base-300 rounded-box p-4">
+            <div class="input input-bordered flex items-center gap-2">
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
+                stroke="currentColor" class="w-5 h-5">
+                <path stroke-linecap="round" stroke-linejoin="round"
+                  d="M16.5 10.125V6.75a4.5 4.5 0 10-9 0v3.375M18.75 10.125h-13.5A1.125 1.125 0 004.125 11.25v8.625c0 .621.504 1.125 1.125 1.125h13.5a1.125 1.125 0 001.125-1.125V11.25a1.125 1.125 0 00-1.125-1.125z" />
+              </svg>
+              <input type="password" class="grow bg-transparent focus:outline-none" placeholder="当前密码"
+                v-model="changePasswordForm.currentPassword" required />
+            </div>
+          </FormField>
+          <FormField legend="新密码" label="输入新密码"
+            fieldset-class="border border-base-300 rounded-box p-4">
+            <div class="input input-bordered flex items-center gap-2">
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
+                stroke="currentColor" class="w-5 h-5">
+                <path stroke-linecap="round" stroke-linejoin="round"
+                  d="M16.5 10.125V6.75a4.5 4.5 0 10-9 0v3.375M18.75 10.125h-13.5A1.125 1.125 0 004.125 11.25v8.625c0 .621.504 1.125 1.125 1.125h13.5a1.125 1.125 0 001.125-1.125V11.25a1.125 1.125 0 00-1.125-1.125z" />
+              </svg>
+              <input type="password" class="grow bg-transparent focus:outline-none" placeholder="新密码"
+                v-model="changePasswordForm.newPassword" required />
+            </div>
+          </FormField>
+          <FormField legend="确认新密码" label="再次输入新密码" description="新密码至少需要6个字符"
+            fieldset-class="border border-base-300 rounded-box p-4">
+            <div class="input input-bordered flex items-center gap-2">
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
+                stroke="currentColor" class="w-5 h-5">
+                <path stroke-linecap="round" stroke-linejoin="round"
+                  d="M16.5 10.125V6.75a4.5 4.5 0 10-9 0v3.375M18.75 10.125h-13.5A1.125 1.125 0 004.125 11.25v8.625c0 .621.504 1.125 1.125 1.125h13.5a1.125 1.125 0 001.125-1.125V11.25a1.125 1.125 0 00-1.125-1.125z" />
+              </svg>
+              <input type="password" class="grow bg-transparent focus:outline-none" placeholder="确认新密码"
+                v-model="changePasswordForm.confirmPassword" required />
+            </div>
+          </FormField>
+        </div>
         <div v-if="changePasswordError" class="alert alert-error alert-soft text-sm">
           <span>{{ changePasswordError }}</span>
         </div>
