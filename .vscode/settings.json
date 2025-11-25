@@ -26,6 +26,9 @@
     },
     {
       "file": "./.vscode/crises-overview.md"
+    },
+    {
+      "file": "./.vscode/logs-overview.md"
     }
   ]
 }

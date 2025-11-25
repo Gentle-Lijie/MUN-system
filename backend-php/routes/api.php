@@ -9,6 +9,7 @@ use App\Http\Controllers\UserController;
 use App\Http\Controllers\UserPermissionController;
 use App\Http\Controllers\VenueController;
 use App\Http\Controllers\MessageController;
+use App\Http\Controllers\LogController;
 use App\Http\Controllers\FilesController;
 use App\Http\Controllers\AttachmentController;
 use App\Http\Controllers\CrisisController;
@@ -67,6 +68,9 @@ return static function (Router $router): void {
 
     $router->get('/api/messages', [MessageController::class, 'index']);
     $router->post('/api/messages', [MessageController::class, 'send']);
+
+    $router->get('/api/logs', [LogController::class, 'index']);
+    $router->delete('/api/logs', [LogController::class, 'destroy']);
 
     $router->get('/api/crises', [CrisisController::class, 'index']);
     $router->post('/api/crises', [CrisisController::class, 'store']);

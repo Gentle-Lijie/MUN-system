@@ -4,6 +4,8 @@ namespace App\Routing;
 
 use App\Application;
 use App\Exceptions\HttpException;
+use App\Support\Auth;
+use App\Support\RequestContext;
 use FastRoute\Dispatcher;
 use FastRoute\RouteCollector;
 use Symfony\Component\HttpFoundation\Request;
@@ -81,18 +83,26 @@ class Router
             $this->buildDispatcher();
         }
 
-        $httpMethod = $request->getMethod();
-        $uri = rawurldecode($request->getPathInfo());
-        error_log("Dispatching: $httpMethod $uri");
-        $routeInfo = $this->dispatcher->dispatch($httpMethod, $uri);
-        error_log("Route info: " . json_encode($routeInfo));
+        RequestContext::reset();
+        $user = Auth::user($this->app, $request, false);
+        RequestContext::setUser($user);
 
-        return match ($routeInfo[0]) {
-            Dispatcher::NOT_FOUND => throw new HttpException('Not Found', 404),
-            Dispatcher::METHOD_NOT_ALLOWED => throw new HttpException('Method Not Allowed', 405),
-            Dispatcher::FOUND => $this->invokeHandler($routeInfo[1], $routeInfo[2], $request),
-            default => throw new HttpException('Not Found', 404),
-        };
+        try {
+            $httpMethod = $request->getMethod();
+            $uri = rawurldecode($request->getPathInfo());
+            error_log("Dispatching: $httpMethod $uri");
+            $routeInfo = $this->dispatcher->dispatch($httpMethod, $uri);
+            error_log("Route info: " . json_encode($routeInfo));
+
+            return match ($routeInfo[0]) {
+                Dispatcher::NOT_FOUND => throw new HttpException('Not Found', 404),
+                Dispatcher::METHOD_NOT_ALLOWED => throw new HttpException('Method Not Allowed', 405),
+                Dispatcher::FOUND => $this->invokeHandler($routeInfo[1], $routeInfo[2], $request),
+                default => throw new HttpException('Not Found', 404),
+            };
+        } finally {
+            RequestContext::reset();
+        }
     }
 
     /**

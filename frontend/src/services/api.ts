@@ -140,6 +140,41 @@ export interface Crisis {
     myResponse?: CrisisResponseItem
 }
 
+export interface UserSummary {
+    id: number
+    name: string
+    email: string
+    role: string
+    organization?: string | null
+    committee?: string | null
+    phone?: string | null
+    permissions?: string[]
+}
+
+export interface LogActor {
+    id: number
+    name: string
+    role: string
+    email: string
+}
+
+export interface LogRecord {
+    id: number
+    action: string
+    targetTable?: string | null
+    targetId?: number | null
+    meta?: Record<string, unknown> | null
+    timestamp?: string | null
+    actor?: LogActor | null
+}
+
+export interface LogListResponse {
+    items: LogRecord[]
+    total: number
+    page: number
+    pageSize: number
+}
+
 class ApiService {
     private async request<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
         const url = `${API_BASE}${endpoint}`
@@ -323,6 +358,33 @@ class ApiService {
         return this.request('/api/messages', {
             method: 'POST',
             body: JSON.stringify(data),
+        })
+    }
+
+    async getUsers(params?: { role?: string; search?: string }): Promise<{ items: UserSummary[]; total: number }> {
+        const query = new URLSearchParams()
+        if (params?.role) query.set('role', params.role)
+        if (params?.search) query.set('search', params.search)
+        const suffix = query.toString() ? `?${query}` : ''
+        return this.request(`/api/users${suffix}`)
+    }
+
+    async getLogs(params?: { actorId?: number; action?: string; table?: string; start?: string; end?: string; page?: number; pageSize?: number }): Promise<LogListResponse> {
+        const query = new URLSearchParams()
+        if (params?.actorId) query.set('actorId', params.actorId.toString())
+        if (params?.action) query.set('action', params.action)
+        if (params?.table) query.set('table', params.table)
+        if (params?.start) query.set('start', params.start)
+        if (params?.end) query.set('end', params.end)
+        if (params?.page) query.set('page', params.page.toString())
+        if (params?.pageSize) query.set('pageSize', params.pageSize.toString())
+        const suffix = query.toString() ? `?${query}` : ''
+        return this.request(`/api/logs${suffix}`)
+    }
+
+    async clearLogs(): Promise<{ deleted: number }> {
+        return this.request('/api/logs', {
+            method: 'DELETE',
         })
     }
 }

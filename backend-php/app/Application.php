@@ -4,6 +4,7 @@ namespace App;
 
 use App\Exceptions\HttpException;
 use App\Routing\Router;
+use App\Support\DatabaseLogger;
 use Dotenv\Dotenv;
 use Illuminate\Container\Container;
 use Illuminate\Database\Capsule\Manager as Capsule;
@@ -137,6 +138,7 @@ class Application
         $capsule->setAsGlobal();
         $capsule->bootEloquent();
         $this->capsule = $capsule;
+        DatabaseLogger::attach($capsule);
     }
 
     private function applyCors(Response $response, Request $request): Response
