@@ -42,7 +42,7 @@ env/
 *.sw?
 
 # Env files
-.env
+# .env
 .env.*
 .env.local
 .env.production
