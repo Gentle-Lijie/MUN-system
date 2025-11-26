@@ -686,10 +686,7 @@ fetchUsers()
       <div class="modal-action">
         <button
           class="btn"
-          @click="
-            showDaisModal = false
-            selectedUserIds = []
-          "
+          @click="showDaisModal = false; selectedUserIds = []"
         >
           取消
         </button>

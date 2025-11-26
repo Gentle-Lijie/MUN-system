@@ -453,7 +453,7 @@ watch(needsLogin, (newVal) => {
         <button
           class="btn btn-primary"
           @click="
-            openLoginModal()
+  openLoginModal();
             showLoginRequiredModal = false
           "
         >
