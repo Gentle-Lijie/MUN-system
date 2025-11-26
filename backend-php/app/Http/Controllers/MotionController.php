@@ -26,7 +26,7 @@ class MotionController extends Controller
         }
 
         $data = $this->body($request);
-        
+
         $committeeSessionId = $data['committeeSessionId'] ?? null;
         $motionType = $data['motionType'] ?? null;
         $proposerId = $data['proposerId'] ?? null;
@@ -86,7 +86,7 @@ class MotionController extends Controller
                 ]);
                 $speakerList->save();
                 $speakerListId = $speakerList->id;
-                
+
                 // 更新 CommitteeSession 的 current_speaker_list_id
                 $committeeSession->current_speaker_list_id = $speakerListId;
                 $committeeSession->save();

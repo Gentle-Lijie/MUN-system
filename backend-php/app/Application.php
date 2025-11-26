@@ -65,7 +65,7 @@ class Application
             error_log('Exception: ' . $throwable->getMessage());
             error_log('File: ' . $throwable->getFile() . ':' . $throwable->getLine());
             error_log('Trace: ' . $throwable->getTraceAsString());
-            
+
             // Always return detailed error in development
             $errorData = [
                 'error' => 'Internal Server Error',
@@ -74,11 +74,11 @@ class Application
                 'line' => $throwable->getLine(),
                 'trace' => explode("\n", $throwable->getTraceAsString()),
             ];
-            
+
             if ($this->config('app.debug')) {
                 return $this->applyCors(new JsonResponse($errorData, 500), $request);
             }
-            
+
             // In production, still show message but not trace
             return $this->applyCors(new JsonResponse([
                 'error' => 'Internal Server Error',

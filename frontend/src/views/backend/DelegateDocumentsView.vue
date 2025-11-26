@@ -189,7 +189,9 @@ onMounted(() => {
   <div class="p-6 space-y-6">
     <header class="border-b border-base-200 pb-4">
       <h2 class="text-2xl font-bold">危机与文件管理</h2>
-      <p class="text-sm text-base-content/70">并排查看危机动态和文件状态，所有编辑操作通过弹窗完成。</p>
+      <p class="text-sm text-base-content/70">
+        并排查看危机动态和文件状态，所有编辑操作通过弹窗完成。
+      </p>
     </header>
 
     <section class="grid gap-6 lg:grid-cols-[35%_65%]">
@@ -200,29 +202,59 @@ onMounted(() => {
             <h3 class="text-xl font-semibold">危机速览</h3>
             <p class="text-sm text-base-content/60">与本委员会相关的危机、任务和提醒</p>
           </div>
-          <button class="btn btn-sm" @click="fetchCrises" :disabled="crisisLoading">{{ crisisLoading ? '刷新中…' : '刷新'
-          }}</button>
+          <button class="btn btn-sm" :disabled="crisisLoading" @click="fetchCrises">
+            {{ crisisLoading ? '刷新中…' : '刷新' }}
+          </button>
         </header>
         <div class="space-y-4 max-h-[600px] overflow-y-auto">
           <div v-if="crisisLoading" class="flex justify-center py-10">
             <span class="loading loading-spinner loading-lg"></span>
           </div>
-          <p v-else-if="crises.length === 0" class="text-center text-base-content/60 py-6">暂无危机信息</p>
-          <article v-for="crisis in crises" :key="crisis.id" class="rounded-xl border border-base-200 p-4 space-y-2">
+          <p v-else-if="crises.length === 0" class="text-center text-base-content/60 py-6">
+            暂无危机信息
+          </p>
+          <article
+            v-for="crisis in crises"
+            :key="crisis.id"
+            class="rounded-xl border border-base-200 p-4 space-y-2"
+          >
             <div class="flex items-center gap-2 flex-wrap">
               <h4 class="text-lg font-semibold">{{ crisis.title }}</h4>
-              <span class="badge"
-                :class="crisis.status === 'active' ? 'badge-info' : crisis.status === 'resolved' ? 'badge-success' : 'badge-outline'">
-                {{ crisis.status === 'active' ? '进行中' : crisis.status === 'resolved' ? '已结案' : '草稿' }}
+              <span
+                class="badge"
+                :class="
+                  crisis.status === 'active'
+                    ? 'badge-info'
+                    : crisis.status === 'resolved'
+                      ? 'badge-success'
+                      : 'badge-outline'
+                "
+              >
+                {{
+                  crisis.status === 'active'
+                    ? '进行中'
+                    : crisis.status === 'resolved'
+                      ? '已结案'
+                      : '草稿'
+                }}
               </span>
               <span class="badge badge-ghost">{{ targetSummary(crisis) }}</span>
             </div>
             <p class="text-sm text-base-content/70 whitespace-pre-line">{{ crisis.content }}</p>
             <div class="flex items-center gap-3 text-sm">
-              <a v-if="crisis.filePath" :href="`${API_BASE}${crisis.filePath}`" class="link" target="_blank"
-                rel="noopener">查看附件</a>
-              <span class="text-base-content/60">更新：{{ crisis.publishedAt ? new
-                Date(crisis.publishedAt).toLocaleString() : '—' }}</span>
+              <a
+                v-if="crisis.filePath"
+                :href="`${API_BASE}${crisis.filePath}`"
+                class="link"
+                target="_blank"
+                rel="noopener"
+                >查看附件</a
+              >
+              <span class="text-base-content/60"
+                >更新：{{
+                  crisis.publishedAt ? new Date(crisis.publishedAt).toLocaleString() : '—'
+                }}</span
+              >
             </div>
           </article>
         </div>
@@ -253,31 +285,74 @@ onMounted(() => {
                   <div class="flex flex-col">
                     <span class="font-medium">{{ doc.title }}</span>
                     <div class="text-xs text-base-content/60 flex flex-wrap gap-2">
-                      <span>更新：{{ doc.updated_at ? new Date(doc.updated_at).toLocaleString() : '—' }}</span>
-                      <button v-if="doc.dias_fb" class="btn btn-ghost btn-xs"
-                        @click.prevent="showDiasFeedback(doc)">审批意见</button>
+                      <span
+                        >更新：{{
+                          doc.updated_at ? new Date(doc.updated_at).toLocaleString() : '—'
+                        }}</span
+                      >
+                      <button
+                        v-if="doc.dias_fb"
+                        class="btn btn-ghost btn-xs"
+                        @click.prevent="showDiasFeedback(doc)"
+                      >
+                        审批意见
+                      </button>
                     </div>
                   </div>
                 </td>
-                <td><span class="badge badge-outline">{{ doc.type }}</span></td>
                 <td>
-                  <span class="badge" :class="{
-                    'badge-success': doc.status === 'approved',
-                    'badge-primary': doc.status === 'published',
-                    'badge-info': doc.status === 'submitted',
-                    'badge-warning': (doc.status === 'draft' || !doc.status),
-                    'badge-error': doc.status === 'rejected'
-                  }">
-                    {{ doc.status === 'approved' ? '已通过' : doc.status === 'published' ? '已发布' : doc.status ===
-                      'submitted' ? '待审批' : (doc.status === 'draft' || !doc.status) ? '草稿' : '已驳回' }}
+                  <span class="badge badge-outline">{{ doc.type }}</span>
+                </td>
+                <td>
+                  <span
+                    class="badge"
+                    :class="{
+                      'badge-success': doc.status === 'approved',
+                      'badge-primary': doc.status === 'published',
+                      'badge-info': doc.status === 'submitted',
+                      'badge-warning': doc.status === 'draft' || !doc.status,
+                      'badge-error': doc.status === 'rejected',
+                    }"
+                  >
+                    {{
+                      doc.status === 'approved'
+                        ? '已通过'
+                        : doc.status === 'published'
+                          ? '已发布'
+                          : doc.status === 'submitted'
+                            ? '待审批'
+                            : doc.status === 'draft' || !doc.status
+                              ? '草稿'
+                              : '已驳回'
+                    }}
                   </span>
                 </td>
                 <td class="space-x-1 whitespace-nowrap">
-                  <a :href="`${API_BASE}${doc.content_path}`" target="_blank" class="btn btn-xs btn-outline">查看</a>
-                  <button class="btn btn-xs btn-secondary"
-                    :class="{ 'opacity-60': doc.status === 'approved' || doc.status === 'published' || doc.status === 'rejected' }"
-                    :title="(doc.status === 'approved' || doc.status === 'published' || doc.status === 'rejected') ? '已定稿，不可编辑' : '编辑'"
-                    @click.prevent="onEditClick(doc)">编辑</button>
+                  <a
+                    :href="`${API_BASE}${doc.content_path}`"
+                    target="_blank"
+                    class="btn btn-xs btn-outline"
+                    >查看</a
+                  >
+                  <button
+                    class="btn btn-xs btn-secondary"
+                    :class="{
+                      'opacity-60':
+                        doc.status === 'approved' ||
+                        doc.status === 'published' ||
+                        doc.status === 'rejected',
+                    }"
+                    :title="
+                      doc.status === 'approved' ||
+                      doc.status === 'published' ||
+                      doc.status === 'rejected'
+                        ? '已定稿，不可编辑'
+                        : '编辑'
+                    "
+                    @click.prevent="onEditClick(doc)"
+                  >
+                    编辑
+                  </button>
                 </td>
               </tr>
               <tr v-if="documents.length === 0 && !loading">
@@ -311,10 +386,18 @@ onMounted(() => {
             </select>
           </FormField>
           <FormField legend="更新附件" label="可选上传新附件">
-            <input type="file" class="file-input file-input-bordered w-full" @change="onEditFileChange" />
+            <input
+              type="file"
+              class="file-input file-input-bordered w-full"
+              @change="onEditFileChange"
+            />
           </FormField>
           <FormField legend="描述" label="补充说明">
-            <textarea v-model="editForm.description" class="textarea textarea-bordered" rows="3"></textarea>
+            <textarea
+              v-model="editForm.description"
+              class="textarea textarea-bordered"
+              rows="3"
+            ></textarea>
           </FormField>
           <FormField legend="提交状态" label="草稿或提交">
             <select v-model="editForm.status" class="select select-bordered">
@@ -333,10 +416,18 @@ onMounted(() => {
     <dialog v-if="showUploadModal" class="modal" open>
       <form method="dialog" class="modal-box max-w-lg" @submit.prevent="uploadDocument">
         <h3 class="font-semibold text-lg mb-2">上传文件</h3>
-        <p class="text-sm text-base-content/60 mb-4">填写文件信息并上传附件，提交后即可等待主席团审批。</p>
+        <p class="text-sm text-base-content/60 mb-4">
+          填写文件信息并上传附件，提交后即可等待主席团审批。
+        </p>
         <div class="space-y-3">
           <FormField legend="文件标题" label="请输入标题">
-            <input v-model="uploadForm.title" type="text" class="input input-bordered" placeholder="文件标题" required />
+            <input
+              v-model="uploadForm.title"
+              type="text"
+              class="input input-bordered"
+              placeholder="文件标题"
+              required
+            />
           </FormField>
           <FormField legend="文件类型" label="选择类别">
             <select v-model="uploadForm.type" class="select select-bordered">
@@ -348,10 +439,19 @@ onMounted(() => {
             </select>
           </FormField>
           <FormField legend="上传附件" label="请选择文件">
-            <input type="file" class="file-input file-input-bordered w-full" @change="handleFileChange" required />
+            <input
+              type="file"
+              class="file-input file-input-bordered w-full"
+              required
+              @change="handleFileChange"
+            />
           </FormField>
           <FormField legend="描述" label="可选补充说明">
-            <textarea v-model="uploadForm.description" class="textarea textarea-bordered" rows="3"></textarea>
+            <textarea
+              v-model="uploadForm.description"
+              class="textarea textarea-bordered"
+              rows="3"
+            ></textarea>
           </FormField>
         </div>
         <div class="modal-action">

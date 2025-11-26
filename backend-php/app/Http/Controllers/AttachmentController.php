@@ -38,7 +38,9 @@ class AttachmentController extends Controller
         $mime = 'application/octet-stream';
         if (function_exists('mime_content_type')) {
             $m = mime_content_type($real);
-            if ($m) $mime = $m;
+            if ($m) {
+                $mime = $m;
+            }
         }
 
         $content = file_get_contents($real);

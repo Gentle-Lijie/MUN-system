@@ -35,11 +35,11 @@ const eventForm = reactive({
 })
 
 const orderedEvents = computed(() =>
-  [...timelineEvents.value].sort((a, b) => a.offsetMinutes - b.offsetMinutes),
+  [...timelineEvents.value].sort((a, b) => a.offsetMinutes - b.offsetMinutes)
 )
 
 const speedLabel = computed(
-  () => speedOptions.find((opt) => opt.value === simConfig.speed)?.label ?? `1:${simConfig.speed}`,
+  () => speedOptions.find((opt) => opt.value === simConfig.speed)?.label ?? `1:${simConfig.speed}`
 )
 
 const realHourEquivalent = computed(() => (60 / simConfig.speed).toFixed(1))
@@ -89,7 +89,9 @@ const setSpeed = (value: number) => {
   <div class="p-6 space-y-6">
     <header class="border-b border-base-200 pb-4">
       <h2 class="text-2xl font-bold">时间轴管理</h2>
-      <p class="text-sm text-base-content/70">主席团可在此配置模拟时间起点与倍率，所有事件按模拟时间推进。</p>
+      <p class="text-sm text-base-content/70">
+        主席团可在此配置模拟时间起点与倍率，所有事件按模拟时间推进。
+      </p>
     </header>
 
     <section class="grid gap-6 xl:grid-cols-[1.6fr,1fr]">
@@ -106,15 +108,20 @@ const setSpeed = (value: number) => {
             </div>
           </div>
           <p class="text-sm text-base-content/70">
-            现实时间 1 分钟 ≈ 模拟时间 {{ simConfig.speed }} 分钟；现实 1 小时 ≈ 模拟 {{ realHourEquivalent }} 小时，适合快速推进议程。
+            现实时间 1 分钟 ≈ 模拟时间 {{ simConfig.speed }} 分钟；现实 1 小时 ≈ 模拟
+            {{ realHourEquivalent }} 小时，适合快速推进议程。
           </p>
         </div>
 
-        <div class="timeline timeline-vertical timeline-compact bg-base-100 border border-base-200 rounded-2xl p-4">
+        <div
+          class="timeline timeline-vertical timeline-compact bg-base-100 border border-base-200 rounded-2xl p-4"
+        >
           <div v-for="event in orderedEvents" :key="event.id" class="timeline-item">
             <div class="timeline-start text-sm font-semibold">
               {{ formatSimTime(event.offsetMinutes) }}
-              <span class="block text-xs text-base-content/60">≈ {{ describeRealDuration(event.offsetMinutes) }} 现实</span>
+              <span class="block text-xs text-base-content/60"
+                >≈ {{ describeRealDuration(event.offsetMinutes) }} 现实</span
+              >
             </div>
             <div class="timeline-middle">
               <span class="badge badge-primary"></span>
@@ -137,16 +144,33 @@ const setSpeed = (value: number) => {
       <div class="space-y-4">
         <div class="border border-base-200 rounded-2xl p-4 space-y-4">
           <h3 class="font-semibold">模拟调度设置</h3>
-          <FormField legend="模拟锚点" label="设置起始时间"
-            fieldsetClass="border border-base-200 rounded-2xl p-4">
+          <FormField
+            legend="模拟锚点"
+            label="设置起始时间"
+            fieldsetClass="border border-base-200 rounded-2xl p-4"
+          >
             <div class="input input-bordered flex items-center gap-2">
-              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" class="h-5 w-5 opacity-70" fill="none"
-                stroke="currentColor" stroke-width="1.5">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                viewBox="0 0 24 24"
+                class="h-5 w-5 opacity-70"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.5"
+              >
                 <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6l3 1.5" />
-                <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5a7.5 7.5 0 1 1 0 15 7.5 7.5 0 0 1 0-15Z" />
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  d="M12 4.5a7.5 7.5 0 1 1 0 15 7.5 7.5 0 0 1 0-15Z"
+                />
               </svg>
-              <input v-model="simConfig.anchorLabel" type="text" class="grow bg-transparent"
-                placeholder="如：Day 1 · 09:00" />
+              <input
+                v-model="simConfig.anchorLabel"
+                type="text"
+                class="grow bg-transparent"
+                placeholder="如：Day 1 · 09:00"
+              />
             </div>
           </FormField>
 
@@ -168,56 +192,126 @@ const setSpeed = (value: number) => {
           </fieldset>
         </div>
 
-        <form class="border border-base-200 rounded-2xl p-4 space-y-4" @submit.prevent="addTimelineEvent">
+        <form
+          class="border border-base-200 rounded-2xl p-4 space-y-4"
+          @submit.prevent="addTimelineEvent"
+        >
           <h3 class="font-semibold">添加模拟事件</h3>
 
-          <FormField legend="距离开始（模拟分钟）" label="输入正整数"
-            fieldsetClass="border border-base-200 rounded-2xl p-4">
+          <FormField
+            legend="距离开始（模拟分钟）"
+            label="输入正整数"
+            fieldsetClass="border border-base-200 rounded-2xl p-4"
+          >
             <div class="input input-bordered flex items-center gap-2">
-              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" class="h-5 w-5 opacity-70" fill="none"
-                stroke="currentColor" stroke-width="1.5">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                viewBox="0 0 24 24"
+                class="h-5 w-5 opacity-70"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.5"
+              >
                 <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6l4 2" />
-                <path stroke-linecap="round" stroke-linejoin="round" d="M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  d="M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z"
+                />
               </svg>
-              <input v-model.number="eventForm.offsetMinutes" type="number" min="0"
-                class="grow bg-transparent" placeholder="如：120" />
+              <input
+                v-model.number="eventForm.offsetMinutes"
+                type="number"
+                min="0"
+                class="grow bg-transparent"
+                placeholder="如：120"
+              />
             </div>
           </FormField>
 
-          <FormField legend="事件标题" label="例如：危机简报"
-            fieldsetClass="border border-base-200 rounded-2xl p-4">
+          <FormField
+            legend="事件标题"
+            label="例如：危机简报"
+            fieldsetClass="border border-base-200 rounded-2xl p-4"
+          >
             <div class="input input-bordered flex items-center gap-2">
-              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" class="h-5 w-5 opacity-70" fill="none"
-                stroke="currentColor" stroke-width="1.5">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                viewBox="0 0 24 24"
+                class="h-5 w-5 opacity-70"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.5"
+              >
                 <path stroke-linecap="round" stroke-linejoin="round" d="M4 7h16M4 12h16M4 17h10" />
               </svg>
-              <input v-model="eventForm.title" type="text" class="grow bg-transparent" placeholder="例如：危机简报" />
+              <input
+                v-model="eventForm.title"
+                type="text"
+                class="grow bg-transparent"
+                placeholder="例如：危机简报"
+              />
             </div>
           </FormField>
 
-          <FormField legend="负责人" label="如：危机组"
-            fieldsetClass="border border-base-200 rounded-2xl p-4">
+          <FormField
+            legend="负责人"
+            label="如：危机组"
+            fieldsetClass="border border-base-200 rounded-2xl p-4"
+          >
             <div class="input input-bordered flex items-center gap-2">
-              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" class="h-5 w-5 opacity-70" fill="none"
-                stroke="currentColor" stroke-width="1.5">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 7.5a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0Z" />
-                <path stroke-linecap="round" stroke-linejoin="round" d="M4.5 19.5a7.5 7.5 0 0 1 15 0" />
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                viewBox="0 0 24 24"
+                class="h-5 w-5 opacity-70"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.5"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  d="M15.75 7.5a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0Z"
+                />
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  d="M4.5 19.5a7.5 7.5 0 0 1 15 0"
+                />
               </svg>
-              <input v-model="eventForm.owner" type="text" class="grow bg-transparent" placeholder="例如：危机组" />
+              <input
+                v-model="eventForm.owner"
+                type="text"
+                class="grow bg-transparent"
+                placeholder="例如：危机组"
+              />
             </div>
           </FormField>
 
-          <FormField legend="备注" label="补充说明"
-            fieldsetClass="border border-base-200 rounded-2xl p-4">
+          <FormField
+            legend="备注"
+            label="补充说明"
+            fieldsetClass="border border-base-200 rounded-2xl p-4"
+          >
             <label class="flex items-center gap-2 text-sm text-base-content/70 mb-3">
-              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" class="h-5 w-5 opacity-70" fill="none"
-                stroke="currentColor" stroke-width="1.5">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                viewBox="0 0 24 24"
+                class="h-5 w-5 opacity-70"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.5"
+              >
                 <path stroke-linecap="round" stroke-linejoin="round" d="M5 7h14M5 12h14M5 17h8" />
               </svg>
               <span>补充说明</span>
             </label>
-            <textarea v-model="eventForm.note" class="textarea textarea-bordered w-full" rows="3"
-              placeholder="可描述任务目标、支援要求等"></textarea>
+            <textarea
+              v-model="eventForm.note"
+              class="textarea textarea-bordered w-full"
+              rows="3"
+              placeholder="可描述任务目标、支援要求等"
+            ></textarea>
           </FormField>
 
           <button class="btn btn-primary w-full" type="submit">写入模拟时间轴</button>

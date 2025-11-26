@@ -54,7 +54,7 @@ class DisplayController extends Controller
         $speakerQueue = [];
         $speakerListId = null;
         $activeMotionMeta = null;
-        
+
         // 优先使用 current_speaker_list_id，如果没有则使用最近的 motion
         if ($currentSession && $currentSession->current_speaker_list_id) {
             $speakerListId = $currentSession->current_speaker_list_id;
@@ -120,7 +120,7 @@ class DisplayController extends Controller
         foreach ($recentMotions as $motion) {
             $title = $motion->state === 'passed' ? '动议通过' : '动议未通过';
             $motionTypeCn = $motionTypeNames[$motion->motion_type] ?? $motion->motion_type;
-            
+
             $description = '';
             $proposerInfo = '';
             if ($motion->proposer) {
@@ -132,11 +132,11 @@ class DisplayController extends Controller
             } else {
                 $description = $motionTypeCn;
             }
-            
+
             if ($motion->unit_time_seconds) {
                 $description .= ' · 单次 ' . $motion->unit_time_seconds . ' 秒';
             }
-            
+
             if ($motion->total_time_seconds) {
                 $description .= ' · 总时长 ' . $motion->total_time_seconds . ' 秒';
             }
@@ -169,7 +169,7 @@ class DisplayController extends Controller
             ->unique()
             ->values()
             ->toArray();
-        
+
         $currentIndex = $speakerListId ? array_search($speakerListId, $allSpeakerListIds) : false;
         if ($currentIndex === false) {
             $currentIndex = 0;
@@ -425,11 +425,11 @@ class DisplayController extends Controller
                 ->where('speaker_list_id', $deleteEmptyList)
                 ->whereIn('status', ['waiting', 'speaking'])
                 ->count();
-            
+
             if ($entryCount === 0) {
                 // 删除发言列表
                 SpeakerList::query()->where('id', $deleteEmptyList)->delete();
-                
+
                 // 删除关联的motion的speaker_list_id引用
                 Motion::query()
                     ->where('speaker_list_id', $deleteEmptyList)

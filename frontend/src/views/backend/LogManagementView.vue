@@ -179,7 +179,9 @@ onMounted(() => {
         <FormField legend="动作类型" label="选择 SQL 或系统动作">
           <select v-model="filters.action" class="select select-bordered">
             <option value="all">全部</option>
-            <option v-for="action in actionOptions" :key="action" :value="action">{{ action }}</option>
+            <option v-for="action in actionOptions" :key="action" :value="action">
+              {{ action }}
+            </option>
           </select>
         </FormField>
         <FormField legend="起始日期" label="筛选开始日期">
@@ -197,7 +199,11 @@ onMounted(() => {
         </button>
         <button class="btn btn-outline" :disabled="loading" @click="resetFilters">重置</button>
         <div class="flex-1"></div>
-        <button class="btn btn-outline btn-error" :disabled="isClearing || loading" @click="handleClearLogs">
+        <button
+          class="btn btn-outline btn-error"
+          :disabled="isClearing || loading"
+          @click="handleClearLogs"
+        >
           <span v-if="isClearing" class="loading loading-spinner loading-xs"></span>
           清空日志
         </button>
@@ -206,8 +212,20 @@ onMounted(() => {
       <div class="flex items-center justify-between text-sm text-base-content/70">
         <p>共 {{ total }} 条记录，当前第 {{ page }} / {{ totalPages }} 页</p>
         <div class="join">
-          <button class="btn btn-sm join-item" :disabled="page === 1 || loading" @click="handlePrevPage">上一页</button>
-          <button class="btn btn-sm join-item" :disabled="page >= totalPages || loading" @click="handleNextPage">下一页</button>
+          <button
+            class="btn btn-sm join-item"
+            :disabled="page === 1 || loading"
+            @click="handlePrevPage"
+          >
+            上一页
+          </button>
+          <button
+            class="btn btn-sm join-item"
+            :disabled="page >= totalPages || loading"
+            @click="handleNextPage"
+          >
+            下一页
+          </button>
         </div>
       </div>
 
@@ -227,14 +245,18 @@ onMounted(() => {
               <td class="whitespace-nowrap">{{ formatTimestamp(log.timestamp) }}</td>
               <td>
                 <div class="font-semibold">{{ operatorLabel(log) }}</div>
-                <p class="text-xs text-base-content/60" v-if="log.actor?.email">{{ log.actor.email }}</p>
+                <p v-if="log.actor?.email" class="text-xs text-base-content/60">
+                  {{ log.actor.email }}
+                </p>
               </td>
               <td>
                 <span class="badge badge-outline">{{ log.action }}</span>
               </td>
               <td>
                 <div>{{ log.targetTable || '—' }}</div>
-                <p v-if="log.targetId" class="text-xs text-base-content/60">ID: {{ log.targetId }}</p>
+                <p v-if="log.targetId" class="text-xs text-base-content/60">
+                  ID: {{ log.targetId }}
+                </p>
               </td>
               <td class="max-w-[18rem]">
                 <p class="text-xs font-mono truncate">{{ metaPreview(log) }}</p>

@@ -1,27 +1,35 @@
 <template>
-    <dialog v-if="modelValue" class="modal" open>
-        <div class="modal-box">
-            <h3 class="font-bold text-lg mb-4">选择发言者</h3>
-            <FormField legend="快速筛选" label="输入国家名或代表名">
-                <input v-model="search" type="text" placeholder="输入国家名或代表名"
-                    class="input input-bordered w-full" />
-            </FormField>
-            <FormField legend="选择发言者" label="从代表名单中选择" description="列表会根据当前会场自动过滤">
-                <select v-model="selectedDelegateId" class="select select-bordered w-full">
-                    <option disabled selected value="">请选择发言者</option>
-                    <option v-for="delegate in filteredDelegates" :key="delegate.id" :value="delegate.id">
-                        {{ delegate.country }} - {{ delegate.userName }}
-                    </option>
-                </select>
-            </FormField>
-            <div class="modal-action">
-                <button class="btn btn-primary w-full" @click="handleConfirm">确认</button>
-            </div>
-        </div>
-        <form method="dialog" class="modal-backdrop">
-            <button @click.prevent="handleClose">关闭</button>
-        </form>
-    </dialog>
+  <dialog v-if="modelValue" class="modal" open>
+    <div class="modal-box">
+      <h3 class="font-bold text-lg mb-4">选择发言者</h3>
+      <FormField legend="快速筛选" label="输入国家名或代表名">
+        <input
+          v-model="search"
+          type="text"
+          placeholder="输入国家名或代表名"
+          class="input input-bordered w-full"
+        />
+      </FormField>
+      <FormField
+        legend="选择发言者"
+        label="从代表名单中选择"
+        description="列表会根据当前会场自动过滤"
+      >
+        <select v-model="selectedDelegateId" class="select select-bordered w-full">
+          <option disabled selected value="">请选择发言者</option>
+          <option v-for="delegate in filteredDelegates" :key="delegate.id" :value="delegate.id">
+            {{ delegate.country }} - {{ delegate.userName }}
+          </option>
+        </select>
+      </FormField>
+      <div class="modal-action">
+        <button class="btn btn-primary w-full" @click="handleConfirm">确认</button>
+      </div>
+    </div>
+    <form method="dialog" class="modal-backdrop">
+      <button @click.prevent="handleClose">关闭</button>
+    </form>
+  </dialog>
 </template>
 
 <script setup lang="ts">
@@ -37,20 +45,21 @@ const selectedDelegateId = ref('')
 const delegates = ref<any[]>([])
 
 const filteredDelegates = computed(() =>
-    delegates.value.filter(d =>
-        d.country.includes(search.value) ||
-        d.userName.includes(search.value)
-    )
+  delegates.value.filter(
+    (d) => d.country.includes(search.value) || d.userName.includes(search.value)
+  )
 )
 
 // 当对话框打开时加载代表列表
-watch(() => props.modelValue, async (isOpen) => {
+watch(
+  () => props.modelValue,
+  async (isOpen) => {
     console.log('PopupDelegate dialog state changed', { isOpen, committeeId: props.committeeId })
     if (!isOpen || !props.committeeId) {
-        if (!props.committeeId) {
-            console.warn('No committeeId provided')
-        }
-        return
+      if (!props.committeeId) {
+        console.warn('No committeeId provided')
+      }
+      return
     }
 
     // 重置选择
@@ -58,43 +67,45 @@ watch(() => props.modelValue, async (isOpen) => {
     search.value = ''
 
     try {
-        const url = `${API_BASE}/api/venues/${props.committeeId}/delegate`
-        console.log('Fetching delegates from:', url)
-        const response = await fetch(url, {
-            credentials: 'include'
-        })
-        if (!response.ok) throw new Error('Failed to load delegates')
+      const url = `${API_BASE}/api/venues/${props.committeeId}/delegate`
+      console.log('Fetching delegates from:', url)
+      const response = await fetch(url, {
+        credentials: 'include',
+      })
+      if (!response.ok) throw new Error('Failed to load delegates')
 
-        const data = await response.json()
-        delegates.value = data.items || []
-        console.log('Loaded delegates:', delegates.value.length, delegates.value)
+      const data = await response.json()
+      delegates.value = data.items || []
+      console.log('Loaded delegates:', delegates.value.length, delegates.value)
     } catch (error) {
-        console.error('Failed to load delegates:', error)
+      console.error('Failed to load delegates:', error)
     }
-}, { immediate: true })
+  },
+  { immediate: true }
+)
 
 function handleConfirm() {
-    console.log('PopupDelegate handleConfirm called', {
-        selectedDelegateId: selectedDelegateId.value,
-        delegates: delegates.value
-    })
-    if (!selectedDelegateId.value) {
-        console.warn('No delegate selected')
-        alert('请先选择一个代表')
-        return
-    }
-    const delegate = delegates.value.find(d => String(d.id) === String(selectedDelegateId.value))
-    console.log('Found delegate:', delegate)
-    if (!delegate) {
-        console.error('Delegate not found in list')
-        alert('未找到选中的代表')
-        return
-    }
-    console.log('Emitting confirm event with delegate:', delegate)
-    emit('confirm', delegate)
-    emit('update:modelValue', false)
+  console.log('PopupDelegate handleConfirm called', {
+    selectedDelegateId: selectedDelegateId.value,
+    delegates: delegates.value,
+  })
+  if (!selectedDelegateId.value) {
+    console.warn('No delegate selected')
+    alert('请先选择一个代表')
+    return
+  }
+  const delegate = delegates.value.find((d) => String(d.id) === String(selectedDelegateId.value))
+  console.log('Found delegate:', delegate)
+  if (!delegate) {
+    console.error('Delegate not found in list')
+    alert('未找到选中的代表')
+    return
+  }
+  console.log('Emitting confirm event with delegate:', delegate)
+  emit('confirm', delegate)
+  emit('update:modelValue', false)
 }
 function handleClose() {
-    emit('update:modelValue', false)
+  emit('update:modelValue', false)
 }
 </script>
