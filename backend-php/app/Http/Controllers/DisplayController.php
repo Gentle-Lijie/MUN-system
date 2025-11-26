@@ -53,6 +53,7 @@ class DisplayController extends Controller
 
         $speakerQueue = [];
         $speakerListId = null;
+        $activeMotionMeta = null;
         
         // 优先使用 current_speaker_list_id，如果没有则使用最近的 motion
         if ($currentSession && $currentSession->current_speaker_list_id) {
@@ -71,6 +72,20 @@ class DisplayController extends Controller
                     'delegate' => $entry->delegate?->user?->name ?? 'Unknown',
                     'status' => $entry->status,
                     'position' => $entry->position,
+                ];
+            }
+
+            $activeMotion = Motion::query()
+                ->where('speaker_list_id', $speakerListId)
+                ->orderByDesc('created_at')
+                ->first();
+
+            if ($activeMotion) {
+                $activeMotionMeta = [
+                    'id' => $activeMotion->id,
+                    'motionType' => $activeMotion->motion_type,
+                    'unitTimeSeconds' => $activeMotion->unit_time_seconds,
+                    'totalTimeSeconds' => $activeMotion->total_time_seconds,
                 ];
             }
         }
@@ -119,11 +134,11 @@ class DisplayController extends Controller
             }
             
             if ($motion->unit_time_seconds) {
-                $description .= ' · 单次 ' . ($motion->unit_time_seconds / 60) . ' 分钟';
+                $description .= ' · 单次 ' . $motion->unit_time_seconds . ' 秒';
             }
             
             if ($motion->total_time_seconds) {
-                $description .= ' · 总时长 ' . ($motion->total_time_seconds / 60) . ' 分钟';
+                $description .= ' · 总时长 ' . $motion->total_time_seconds . ' 秒';
             }
 
             $historyEvents[] = [
@@ -178,6 +193,7 @@ class DisplayController extends Controller
             ],
             'speakerQueue' => $speakerQueue,
             'speakerListId' => $speakerListId,
+            'activeMotion' => $activeMotionMeta,
             'currentIndex' => $currentIndex,
             'totalLists' => count($allSpeakerListIds),
             'historyEvents' => $historyEvents,

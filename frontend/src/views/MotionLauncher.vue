@@ -11,8 +11,8 @@ function handleMotionPass(payload: {
 }) {
     const fragments: string[] = ['获得通过']
     if (payload.form.country) fragments.push(`发起国：${payload.form.country}`)
-    if (payload.form.unitTime) fragments.push(`单次 ${payload.form.unitTime} 分钟`)
-    if (payload.form.totalTime) fragments.push(`总时长 ${payload.form.totalTime} 分钟`)
+    if (payload.form.unitTime) fragments.push(`单次 ${payload.form.unitTime} 秒`)
+    if (payload.form.totalTime) fragments.push(`总时长 ${payload.form.totalTime} 秒`)
     if (payload.form.notes) fragments.push(payload.form.notes)
 
     lastResult.value = `动议通过「${payload.motion.title}」 · ${fragments.join(' · ') || '无补充说明'}`
@@ -25,8 +25,8 @@ function handleMotionFail(payload: {
 }) {
     const fragments: string[] = ['未获通过']
     if (payload.form.country) fragments.push(`发起国：${payload.form.country}`)
-    if (payload.form.unitTime) fragments.push(`单次 ${payload.form.unitTime} 分钟`)
-    if (payload.form.totalTime) fragments.push(`总时长 ${payload.form.totalTime} 分钟`)
+    if (payload.form.unitTime) fragments.push(`单次 ${payload.form.unitTime} 秒`)
+    if (payload.form.totalTime) fragments.push(`总时长 ${payload.form.totalTime} 秒`)
     if (payload.form.notes) fragments.push(payload.form.notes)
 
     lastResult.value = `动议未通过「${payload.motion.title}」 · ${fragments.join(' · ') || '无补充说明'}`

@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, onMounted, reactive, ref } from 'vue'
 import FormField from '@/components/common/FormField.vue'
-import { api, API_BASE, type Crisis, type CrisisStatus, type CrisisResponseItem, type Venue } from '@/services/api'
+import { api, API_BASE, type Crisis, type CrisisStatus, type Venue } from '@/services/api'
 
 const crises = ref<Crisis[]>([])
 const loading = ref(false)
@@ -14,19 +14,9 @@ const form = reactive({
   title: '',
   content: '',
   status: 'active' as CrisisStatus,
-  responsesAllowed: false,
   targetCommittees: [] as number[],
   filePath: null as string | null,
   file: null as File | null,
-})
-
-const responseModal = reactive({
-  open: false,
-  loading: false,
-  crisisId: 0,
-  crisisTitle: '',
-  items: [] as CrisisResponseItem[],
-  search: '',
 })
 
 const statusLabels: Record<CrisisStatus, string> = {
@@ -42,16 +32,6 @@ const statusClass: Record<CrisisStatus, string> = {
   resolved: 'badge-success',
   archived: 'badge-ghost',
 }
-
-const filteredItems = computed(() => {
-  if (!responseModal.search.trim()) return responseModal.items
-  const search = responseModal.search.toLowerCase()
-  return responseModal.items.filter(item =>
-    item.user?.name?.toLowerCase().includes(search) ||
-    item.committee?.name?.toLowerCase().includes(search) ||
-    item.country?.toLowerCase().includes(search)
-  )
-})
 
 const filteredCrises = computed(() => {
   if (filterStatus.value === 'all') return crises.value
@@ -84,7 +64,6 @@ const resetForm = () => {
   form.title = ''
   form.content = ''
   form.status = 'active'
-  form.responsesAllowed = false
   form.targetCommittees = []
   form.filePath = null
   form.file = null
@@ -95,7 +74,6 @@ const startEdit = (crisis: Crisis) => {
   form.title = crisis.title
   form.content = crisis.content
   form.status = crisis.status
-  form.responsesAllowed = crisis.responsesAllowed
   form.targetCommittees = crisis.targetCommittees ? [...crisis.targetCommittees] : []
   form.filePath = crisis.filePath ?? null
   form.file = null
@@ -122,7 +100,6 @@ const saveCrisis = async () => {
     const payload = {
       title: form.title.trim(),
       content: form.content.trim(),
-      responses_allowed: form.responsesAllowed,
       status: form.status,
       target_committees: form.targetCommittees.length ? [...form.targetCommittees] : null,
       file_path: filePath ?? null,
@@ -142,37 +119,6 @@ const saveCrisis = async () => {
   } finally {
     saving.value = false
   }
-}
-
-const openResponseModal = async (crisis: Crisis) => {
-  responseModal.open = true
-  responseModal.loading = true
-  responseModal.crisisId = crisis.id
-  responseModal.crisisTitle = crisis.title
-  responseModal.items = []
-  responseModal.search = ''
-  try {
-    const result = await api.getCrisisResponses(crisis.id)
-    responseModal.items = result.items
-  } catch (error) {
-    console.error('Failed to load responses', error)
-    window.alert('加载反馈失败')
-  } finally {
-    responseModal.loading = false
-  }
-}
-
-const closeResponseModal = () => {
-  responseModal.open = false
-}
-
-const exportResponses = () => {
-  const link = document.createElement('a')
-  link.href = `${API_BASE}/api/crises/${responseModal.crisisId}/responses/export`
-  link.download = `crisis_responses_${responseModal.crisisId}.csv`
-  document.body.appendChild(link)
-  link.click()
-  document.body.removeChild(link)
 }
 
 const committeeLookup = computed(() => {
@@ -234,9 +180,6 @@ onMounted(() => {
               <div class="flex items-center gap-2">
                 <h3 class="text-lg font-semibold">{{ crisis.title }}</h3>
                 <span class="badge" :class="statusClass[crisis.status]">{{ statusLabels[crisis.status] }}</span>
-                <span class="badge" :class="crisis.responsesAllowed ? 'badge-success' : 'badge-outline'">
-                  {{ crisis.responsesAllowed ? '开放反馈' : '关闭反馈' }}
-                </span>
               </div>
               <p class="text-sm text-base-content/70">
                 发布于：{{ crisis.publishedAt ? new Date(crisis.publishedAt).toLocaleString() : '—' }}
@@ -248,10 +191,6 @@ onMounted(() => {
               </div>
             </div>
             <div class="flex flex-col gap-2">
-              <button class="btn btn-xs btn-outline" @click="openResponseModal(crisis)"
-                :disabled="crisis.responsesCount === 0">
-                查看反馈 ({{ crisis.responsesCount }})
-              </button>
               <button class="btn btn-xs btn-secondary" @click="startEdit(crisis)">编辑</button>
             </div>
           </div>
@@ -259,7 +198,6 @@ onMounted(() => {
           <div class="flex flex-wrap gap-3 items-center text-sm">
             <a v-if="crisis.filePath" class="link link-primary" :href="`${API_BASE}${crisis.filePath}`" target="_blank"
               rel="noopener">查看附件</a>
-            <span class="text-base-content/60">回应数：{{ crisis.responsesCount }}</span>
           </div>
         </article>
       </div>
@@ -291,10 +229,6 @@ onMounted(() => {
             <option value="archived">已归档</option>
           </select>
         </FormField>
-        <FormField legend="代表反馈" label="允许代表提交反馈" fieldsetClass="w-full"
-          description="开启后代表端可提交响应方案">
-          <input type="checkbox" class="toggle toggle-primary" v-model="form.responsesAllowed" />
-        </FormField>
         <FormField legend="附件（可选）" label="上传危机附件" fieldsetClass="w-full">
           <input type="file" class="file-input file-input-bordered w-full" @change="handleFileChange" />
         </FormField>
@@ -307,56 +241,5 @@ onMounted(() => {
         </button>
       </form>
     </section>
-
-    <dialog v-if="responseModal.open" class="modal !mt-0" open>
-      <div class="modal-box max-w-4xl">
-        <h3 class="font-semibold text-lg mb-3">{{ responseModal.crisisTitle }} · 反馈列表</h3>
-        <div class="flex gap-3 mb-4">
-          <FormField legend="反馈搜索" label="输入姓名/委员会/国家" fieldsetClass="flex-1">
-            <input v-model="responseModal.search" type="text" placeholder="搜索代表姓名、委员会或国家"
-              class="input input-bordered w-full" />
-          </FormField>
-          <button class="btn btn-outline" @click="exportResponses"
-            :disabled="responseModal.items.length === 0">导出CSV</button>
-        </div>
-        <div class="min-h-40">
-          <div v-if="responseModal.loading" class="flex justify-center py-10">
-            <span class="loading loading-spinner loading-lg"></span>
-          </div>
-          <div v-else>
-            <div v-if="filteredItems.length === 0" class="text-base-content/60 text-center py-6">{{ responseModal.search
-              ? '无匹配结果' : '尚无反馈' }}</div>
-            <div v-else class="overflow-x-auto">
-              <table class="table table-sm">
-                <thead>
-                  <tr>
-                    <th>代表</th>
-                    <th>所属委员会</th>
-                    <th>国家/身份</th>
-                    <th>反馈</th>
-                    <th>时间</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr v-for="item in filteredItems" :key="item.id">
-                    <td>{{ item.user?.name || '—' }}</td>
-                    <td>{{ item.committee?.name || '—' }}</td>
-                    <td>{{ item.country || '—' }}</td>
-                    <td class="whitespace-pre-line">{{ item.content.summary || '—' }}</td>
-                    <td class="whitespace-nowrap">
-                      <div>{{ item.createdAt ? new Date(item.createdAt).toLocaleString() : '—' }}</div>
-                      <a v-if="item.filePath" :href="`${API_BASE}${item.filePath}`" target="_blank" class="link">附件</a>
-                    </td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-          </div>
-        </div>
-        <div class="modal-action">
-          <button class="btn" @click="closeResponseModal">关闭</button>
-        </div>
-      </div>
-    </dialog>
   </div>
 </template>

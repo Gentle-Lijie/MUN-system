@@ -65,7 +65,7 @@
                                 </div>
                                 <template v-if="activeMotion?.requires.unitTime && activeMotion?.requires.totalTime">
                                     <div class="grid grid-cols-1 gap-4 lg:grid-cols-2">
-                                        <FormField legend="单位时间（分钟）" label="每位发言代表的时间">
+                                        <FormField legend="单位时间（秒）" label="每位发言代表的时间">
                                             <div class="input input-bordered flex items-center gap-2">
                                                 <svg class="h-[1.2em] opacity-50" xmlns="http://www.w3.org/2000/svg"
                                                     viewBox="0 0 24 24" fill="none">
@@ -75,12 +75,12 @@
                                                         stroke-width="2" stroke-linecap="round"
                                                         stroke-linejoin="round" />
                                                 </svg>
-                                                <input v-model.number="formState.unitTime" type="number" min="1"
-                                                    max="120" placeholder="例如 2"
+                                                <input v-model.number="formState.unitTime" type="number" min="10"
+                                                    max="3600" placeholder="例如 120"
                                                     class="grow bg-transparent focus:outline-none" required />
                                             </div>
                                         </FormField>
-                                        <FormField legend="总时间（分钟）" label="整个动议的总时长">
+                                        <FormField legend="总时间（秒）" label="整个动议的总时长">
                                             <div class="input input-bordered flex items-center gap-2">
                                                 <svg class="h-[1.2em] opacity-50" xmlns="http://www.w3.org/2000/svg"
                                                     viewBox="0 0 24 24" fill="none">
@@ -90,14 +90,14 @@
                                                         stroke-width="2" stroke-linecap="round"
                                                         stroke-linejoin="round" />
                                                 </svg>
-                                                <input v-model.number="formState.totalTime" type="number" min="1"
-                                                    max="480" placeholder="例如 20"
+                                                <input v-model.number="formState.totalTime" type="number" min="30"
+                                                    max="7200" placeholder="例如 600"
                                                     class="grow bg-transparent focus:outline-none" required />
                                             </div>
                                         </FormField>
                                     </div>
                                 </template>
-                                <FormField v-else-if="activeMotion?.requires.unitTime" legend="单位时间（分钟）"
+                                <FormField v-else-if="activeMotion?.requires.unitTime" legend="单位时间（秒）"
                                     label="每位发言代表的时间">
                                     <div class="input input-bordered flex items-center gap-2">
                                         <svg class="h-[1.2em] opacity-50" xmlns="http://www.w3.org/2000/svg"
@@ -107,11 +107,11 @@
                                             <polyline points="12,6 12,12 16,14" stroke="currentColor"
                                                 stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
                                         </svg>
-                                        <input v-model.number="formState.unitTime" type="number" min="1" max="120"
-                                            placeholder="例如 2" class="grow bg-transparent focus:outline-none" required />
+                                        <input v-model.number="formState.unitTime" type="number" min="10" max="3600"
+                                            placeholder="例如 120" class="grow bg-transparent focus:outline-none" required />
                                     </div>
                                 </FormField>
-                                <FormField v-else-if="activeMotion?.requires.totalTime" legend="总时间（分钟）"
+                                <FormField v-else-if="activeMotion?.requires.totalTime" legend="总时间（秒）"
                                     label="整个动议的总时长">
                                     <div class="input input-bordered flex items-center gap-2">
                                         <svg class="h-[1.2em] opacity-50" xmlns="http://www.w3.org/2000/svg"
@@ -121,8 +121,8 @@
                                             <polyline points="12,6 12,12 16,14" stroke="currentColor"
                                                 stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
                                         </svg>
-                                        <input v-model.number="formState.totalTime" type="number" min="1" max="480"
-                                            placeholder="例如 20" class="grow bg-transparent focus:outline-none" required />
+                                        <input v-model.number="formState.totalTime" type="number" min="30" max="7200"
+                                            placeholder="例如 600" class="grow bg-transparent focus:outline-none" required />
                                     </div>
                                 </FormField>
                                 <FormField legend="附加说明（可选）" label="补充主持要点或文件信息">
@@ -189,9 +189,9 @@ const motions: MotionDefinition[] = [
     {
         id: 'main-speakers',
         title: '开启主发言名单',
-        description: '开启新的主发言名单流程，设置单位与总时间。',
-        badges: ['发起国家', '单位时间', '总时间'],
-        requires: { country: true, unitTime: true, totalTime: true },
+        description: '开启新的主发言名单流程，仅需设置单位发言时长。',
+        badges: ['发起国家', '单位时间'],
+        requires: { country: true, unitTime: true, totalTime: false },
     },
     {
         id: 'moderated-caucus',
@@ -284,8 +284,8 @@ const delegates = ref<any[]>([])
 const selectedMotionId = ref(motions[0]?.id ?? '')
 const formState = reactive<MotionFormState>({
     country: '',
-    unitTime: 2,
-    totalTime: 20,
+    unitTime: 120,
+    totalTime: 600,
     notes: '',
     triggerRollCall: false,
     proposerId: undefined,
@@ -322,8 +322,8 @@ watch(
 
 function resetForm() {
     formState.country = ''
-    formState.unitTime = 2
-    formState.totalTime = 20
+    formState.unitTime = 120
+    formState.totalTime = 600
     formState.notes = ''
     formState.triggerRollCall = false
     formState.proposerId = undefined

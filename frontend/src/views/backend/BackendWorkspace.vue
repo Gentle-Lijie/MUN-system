@@ -43,12 +43,10 @@ const featureGroups: FeatureGroup[] = [
     {
         key: 'delegate',
         title: '选手功能',
-        subtitle: '个人面板与互动工具',
+        subtitle: '文件与消息管理',
         items: [
-            { label: '个人面板', description: '个人资料与状态', to: '/backend/delegate/profile' },
-            { label: '文件中心', description: '上传与查看文件', to: '/backend/delegate/documents' },
+            { label: '会场中心', description: '上传与查看文件、危机管理', to: '/backend/delegate/documents' },
             { label: '消息中心', description: '私聊、群聊、广播', to: '/backend/delegate/messages' },
-            { label: '危机响应', description: '查看危机与提交方案', to: '/backend/delegate/crisis-response' },
         ],
     },
 ]
@@ -65,10 +63,8 @@ const routePermissionMap: Record<string, string | string[]> = {
     '/backend/presidium/crisis': 'crisis:dispatch',
     '/backend/presidium/timeline': 'timeline:update',
     '/backend/presidium/messages': 'messages:broadcast',
-    '/backend/delegate/profile': 'delegate:self',
     '/backend/delegate/documents': 'documents:submit',
     '/backend/delegate/messages': 'messages:send',
-    '/backend/delegate/crisis-response': 'delegate:self',
 }
 
 const userPermissions = ref<string[]>([])

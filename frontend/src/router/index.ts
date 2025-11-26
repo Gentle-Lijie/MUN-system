@@ -15,10 +15,8 @@ const FileManagementView = () => import('@/views/backend/FileManagementView.vue'
 const CrisisManagementView = () => import('@/views/backend/CrisisManagementView.vue')
 const TimelineManagementView = () => import('@/views/backend/TimelineManagementView.vue')
 const MessageManagementView = () => import('@/views/backend/MessageManagementView.vue')
-const DelegateProfileView = () => import('@/views/backend/DelegateProfileView.vue')
 const DelegateDocumentsView = () => import('@/views/backend/DelegateDocumentsView.vue')
 const DelegateMessagesView = () => import('@/views/backend/DelegateMessagesView.vue')
-const DelegateCrisisResponseView = () => import('@/views/backend/DelegateCrisisResponseView.vue')
 const TestPopupDelegate = () => import('@/views/TestPopupDelegate.vue')
 
 const router = createRouter({
@@ -137,28 +135,16 @@ const router = createRouter({
           meta: { title: '消息管理' },
         },
         {
-          path: 'delegate/profile',
-          name: 'backend-delegate-profile',
-          component: DelegateProfileView,
-          meta: { title: '个人面板' },
-        },
-        {
           path: 'delegate/documents',
           name: 'backend-delegate-documents',
           component: DelegateDocumentsView,
-          meta: { title: '文件中心' },
+          meta: { title: '会场中心' },
         },
         {
           path: 'delegate/messages',
           name: 'backend-delegate-messages',
           component: DelegateMessagesView,
           meta: { title: '消息中心' },
-        },
-        {
-          path: 'delegate/crisis-response',
-          name: 'backend-delegate-crisis-response',
-          component: DelegateCrisisResponseView,
-          meta: { title: '危机响应' },
         },
       ],
       meta: { title: '后台功能矩阵' },

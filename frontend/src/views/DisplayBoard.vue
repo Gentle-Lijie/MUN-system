@@ -32,8 +32,13 @@ const apiFetch = (path: string, options: RequestInit = {}) =>
 
 // 计时器状态
 const timerRunning = ref(false)
-const timerSeconds = ref(0)
-const timerDefaultSeconds = ref(180) // 默认3分钟，从motion的unit_time_seconds获取
+const speakerTimerSeconds = ref(0)
+const speakerTimerDefaultSeconds = ref(120) // 默认120秒，后续由动议覆盖
+const caucusTotalSeconds = ref<number | null>(null)
+const caucusRemainingSeconds = ref<number | null>(null)
+const activeMotionMeta = ref<{ motionType?: string | null; unitTimeSeconds?: number | null; totalTimeSeconds?: number | null } | null>(null)
+const caucusStorageKey = 'mun-caucus-remaining'
+const caucusRemainingState = ref<Record<string, number>>({})
 let timerInterval: number | null = null
 
 // 时间显示状态
@@ -51,6 +56,88 @@ type MotionSubmission = {
         unitTime: number
         totalTime: number
         notes: string
+    }
+}
+
+const isModeratedCaucus = computed(() => activeMotionMeta.value?.motionType === 'moderate_caucus')
+const showCaucusTimer = computed(() => isModeratedCaucus.value && typeof caucusRemainingSeconds.value === 'number')
+
+const loadCaucusState = () => {
+    if (typeof window === 'undefined') return
+    try {
+        const raw = window.localStorage.getItem(caucusStorageKey)
+        if (!raw) return
+        const parsed = JSON.parse(raw)
+        if (parsed && typeof parsed === 'object') {
+            caucusRemainingState.value = parsed
+        }
+    } catch (error) {
+        console.warn('Failed to load caucus timing cache', error)
+    }
+}
+
+const persistCaucusState = () => {
+    if (typeof window === 'undefined') return
+    try {
+        window.localStorage.setItem(caucusStorageKey, JSON.stringify(caucusRemainingState.value))
+    } catch (error) {
+        console.warn('Failed to persist caucus timing cache', error)
+    }
+}
+
+const syncCaucusRemainingForCurrentList = () => {
+    if (!speakerListId.value) return
+    if (typeof caucusRemainingSeconds.value !== 'number') {
+        const nextState = { ...caucusRemainingState.value }
+        delete nextState[speakerListId.value]
+        caucusRemainingState.value = nextState
+    } else {
+        caucusRemainingState.value = {
+            ...caucusRemainingState.value,
+            [speakerListId.value]: caucusRemainingSeconds.value,
+        }
+    }
+    persistCaucusState()
+}
+
+const hydrateCaucusTiming = (listId: string | null, totalSeconds?: number | null) => {
+    if (!listId || !totalSeconds) {
+        caucusTotalSeconds.value = null
+        caucusRemainingSeconds.value = null
+        return
+    }
+    caucusTotalSeconds.value = totalSeconds
+    const stored = caucusRemainingState.value[listId]
+    if (typeof stored === 'number') {
+        caucusRemainingSeconds.value = Math.min(Math.max(stored, 0), totalSeconds)
+    } else {
+        caucusRemainingSeconds.value = totalSeconds
+        caucusRemainingState.value = {
+            ...caucusRemainingState.value,
+            [listId]: totalSeconds,
+        }
+        persistCaucusState()
+    }
+}
+
+const configureMotionTiming = (motionMeta: any, listId: string | null) => {
+    activeMotionMeta.value = motionMeta || null
+
+    const unitSeconds = motionMeta?.unitTimeSeconds
+    if (typeof unitSeconds === 'number' && unitSeconds > 0) {
+        speakerTimerDefaultSeconds.value = unitSeconds
+        if (!timerRunning.value) {
+            speakerTimerSeconds.value = unitSeconds
+        }
+    } else if (!timerRunning.value && speakerTimerSeconds.value === 0) {
+        speakerTimerSeconds.value = speakerTimerDefaultSeconds.value
+    }
+
+    if (motionMeta?.motionType === 'moderate_caucus' && motionMeta?.totalTimeSeconds && listId) {
+        hydrateCaucusTiming(listId, motionMeta.totalTimeSeconds)
+    } else {
+        caucusTotalSeconds.value = null
+        caucusRemainingSeconds.value = null
     }
 }
 
@@ -106,16 +193,7 @@ const loadBoardData = async () => {
         historyEvents.value = data.historyEvents || []
         speakerListCurrentIndex.value = data.currentIndex !== undefined ? data.currentIndex + 1 : 0
         speakerListTotalCount.value = data.totalLists || 0
-
-        // 从最新的motion获取unit_time_seconds作为计时器默认时间
-        if (data.historyEvents && data.historyEvents.length > 0) {
-            const latestMotion = data.historyEvents[0]
-            // 从描述中解析单次时间，或使用默认值
-            const match = latestMotion.description?.match(/单次 (\d+(\.\d+)?) 分钟/)
-            if (match) {
-                timerDefaultSeconds.value = Math.floor(parseFloat(match[1]) * 60)
-            }
-        }
+        configureMotionTiming(data.activeMotion || null, speakerListId.value)
 
         // 检查是否需要显示开始会议按钮
         showStartSessionOverlay.value = ['preparation', 'paused'].includes(data.committee.status)
@@ -295,8 +373,8 @@ const handleMotionPass = async ({ motion, form }: MotionSubmission) => {
                 committeeId: committeeId.value,
                 motionType: motionType,
                 proposerId: (form as any).proposerId || null,
-                unitTimeSeconds: form.unitTime ? form.unitTime * 60 : null,
-                totalTimeSeconds: form.totalTime ? form.totalTime * 60 : null,
+                unitTimeSeconds: form.unitTime || null,
+                totalTimeSeconds: form.totalTime || null,
                 state: 'passed',
             })
         })
@@ -315,10 +393,10 @@ const handleMotionPass = async ({ motion, form }: MotionSubmission) => {
             summary.push(`由 ${form.country} 发起`)
         }
         if (motion.requires.unitTime && form.unitTime) {
-            summary.push(`单次 ${form.unitTime} 分钟`)
+            summary.push(`单次 ${form.unitTime} 秒`)
         }
         if (motion.requires.totalTime && form.totalTime) {
-            summary.push(`总时长 ${form.totalTime} 分钟`)
+            summary.push(`总时长 ${form.totalTime} 秒`)
         }
         if (form.notes) {
             summary.push(form.notes)
@@ -371,8 +449,8 @@ const handleMotionFail = async ({ motion, form }: MotionSubmission) => {
                 committeeId: committeeId.value,
                 motionType: motionType,
                 proposerId: (form as any).proposerId || null,
-                unitTimeSeconds: form.unitTime ? form.unitTime * 60 : null,
-                totalTimeSeconds: form.totalTime ? form.totalTime * 60 : null,
+                unitTimeSeconds: form.unitTime || null,
+                totalTimeSeconds: form.totalTime || null,
                 state: 'rejected',
             })
         })
@@ -384,10 +462,10 @@ const handleMotionFail = async ({ motion, form }: MotionSubmission) => {
             summary.push(`由 ${form.country} 发起`)
         }
         if (motion.requires.unitTime && form.unitTime) {
-            summary.push(`单次 ${form.unitTime} 分钟`)
+            summary.push(`单次 ${form.unitTime} 秒`)
         }
         if (motion.requires.totalTime && form.totalTime) {
-            summary.push(`总时长 ${form.totalTime} 分钟`)
+            summary.push(`总时长 ${form.totalTime} 秒`)
         }
         if (form.notes) {
             summary.push(form.notes)
@@ -413,6 +491,11 @@ const startTimer = async () => {
         return
     }
 
+    if (isModeratedCaucus.value && typeof caucusRemainingSeconds.value === 'number' && caucusRemainingSeconds.value <= 0) {
+        alert('该主持核心磋商的总时间已用尽')
+        return
+    }
+
     try {
         const response = await apiFetch('/api/display/timer/start', {
             method: 'POST',
@@ -423,19 +506,36 @@ const startTimer = async () => {
         if (!response.ok) throw new Error('Failed to start timer')
 
         timerRunning.value = true
-        timerSeconds.value = timerDefaultSeconds.value
+        const effectiveSpeakerSeconds = isModeratedCaucus.value && typeof caucusRemainingSeconds.value === 'number'
+            ? Math.min(speakerTimerDefaultSeconds.value, Math.max(caucusRemainingSeconds.value, 0))
+            : speakerTimerDefaultSeconds.value
+        speakerTimerSeconds.value = effectiveSpeakerSeconds
 
-        // 启动计时器倒计时
         if (timerInterval) clearInterval(timerInterval)
         timerInterval = setInterval(() => {
-            if (timerSeconds.value > 0) {
-                timerSeconds.value--
+            let shouldStop = false
+
+            if (speakerTimerSeconds.value > 0) {
+                speakerTimerSeconds.value--
             } else {
+                shouldStop = true
+            }
+
+            if (isModeratedCaucus.value && typeof caucusRemainingSeconds.value === 'number') {
+                if (caucusRemainingSeconds.value > 0) {
+                    caucusRemainingSeconds.value = Math.max(caucusRemainingSeconds.value - 1, 0)
+                    syncCaucusRemainingForCurrentList()
+                }
+                if (caucusRemainingSeconds.value <= 0) {
+                    shouldStop = true
+                }
+            }
+
+            if (shouldStop) {
                 stopTimer()
             }
         }, 1000) as unknown as number
 
-        // 刷新发言队列状态
         await loadBoardData()
     } catch (error) {
         console.error('Failed to start timer:', error)
@@ -445,7 +545,7 @@ const startTimer = async () => {
 
 // 停止计时
 const stopTimer = async () => {
-    if (!speakerListId.value) return
+    if (!speakerListId.value || !timerRunning.value) return
 
     try {
         const response = await apiFetch('/api/display/timer/stop', {
@@ -461,6 +561,8 @@ const stopTimer = async () => {
             clearInterval(timerInterval)
             timerInterval = null
         }
+
+        syncCaucusRemainingForCurrentList()
 
         // 刷新发言队列状态
         await loadBoardData()
@@ -499,7 +601,7 @@ const nextSpeaker = async () => {
             clearInterval(timerInterval)
             timerInterval = null
         }
-        timerSeconds.value = timerDefaultSeconds.value
+        speakerTimerSeconds.value = speakerTimerDefaultSeconds.value
 
         // 添加历史记录
         historyEvents.value.unshift({
@@ -513,9 +615,13 @@ const nextSpeaker = async () => {
 }
 
 // 格式化计时器显示
-const formatTimer = (seconds: number): string => {
-    const mins = Math.floor(seconds / 60)
-    const secs = seconds % 60
+const formatTimer = (seconds?: number | null): string => {
+    if (seconds === undefined || seconds === null || Number.isNaN(seconds)) {
+        return '00:00'
+    }
+    const safeSeconds = Math.max(0, Math.floor(seconds))
+    const mins = Math.floor(safeSeconds / 60)
+    const secs = safeSeconds % 60
     return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`
 }
 
@@ -533,6 +639,7 @@ const conditionalRefresh = () => {
 }
 
 onMounted(() => {
+    loadCaucusState()
     loadBoardData()
     // 每5秒刷新一次（仅在没有弹窗时）
     refreshInterval = setInterval(conditionalRefresh, 5000) as unknown as number
@@ -625,12 +732,15 @@ onUnmounted(() => {
 
             <div class="grid flex-1 min-h-0 lg:grid-cols-[34.5%_64.5%] w-full box-border" style="gap:1%">
                 <div class="flex h-full min-h-0 flex-col rounded-3xl bg-base-100 shadow-xl">
-                    <div class="px-8 py-6 text-center">
+                    <div class="px-8 py-6 text-center space-y-2">
                         <div class="text-6xl font-bold" :class="timerRunning ? 'text-primary' : ''">
-                            {{ formatTimer(timerSeconds) }}
+                            {{ formatTimer(speakerTimerSeconds) }}
                         </div>
-                        <div class="text-sm text-base-content/50 mt-2">
-                            默认时长: {{ formatTimer(timerDefaultSeconds) }}
+                        <div class="text-sm text-base-content/60">
+                            单位时长：{{ formatTimer(speakerTimerDefaultSeconds) }}
+                        </div>
+                        <div v-if="showCaucusTimer" class="text-sm text-secondary">
+                            总剩余：{{ formatTimer(caucusRemainingSeconds) }} / {{ formatTimer(caucusTotalSeconds) }}
                         </div>
                     </div>
                     <div class="px-8 pb-6">

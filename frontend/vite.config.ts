@@ -23,6 +23,10 @@ export default defineConfig(({ mode }) => {
           target: proxyTarget,
           changeOrigin: true,
         },
+        '/attachments': {
+          target: proxyTarget,
+          changeOrigin: true,
+        },
       },
       allowedHosts: ['.localhost', '.localdomain', 'zlj.hnrobert.space'],
     },
