@@ -28,7 +28,7 @@ export default defineConfig(({ mode }) => {
           changeOrigin: true,
         },
       },
-      allowedHosts: ['.localhost', '.localdomain', 'zlj.hnrobert.space'],
+      allowedHosts: ['.localhost', '.localdomain', 'zlj.hnrobert.space','steamhub.top'],
     },
   }
 })
