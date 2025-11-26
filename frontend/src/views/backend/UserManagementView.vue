@@ -466,7 +466,7 @@ watch(roleFilter, () => {
                 class="cursor-pointer"
                 :class="selectedUser?.id === user.id ? 'bg-primary/10' : ''"
                 @click="handleRowClick(user)"
-              >
+              
                 >
                 <td>
                   <div class="avatar placeholder">
