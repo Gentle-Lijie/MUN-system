@@ -735,7 +735,10 @@ onUnmounted(() => {
           <div class="stat place-items-center">
             <button
               class="btn btn-sm btn-ghost"
-              @click="showRollCallModal = true; loadDelegates()"
+              @click="
+  showRollCallModal = true;
+                loadDelegates()
+              "
             >
               <svg
                 xmlns="http://www.w3.org/2000/svg"

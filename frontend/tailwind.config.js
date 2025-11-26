@@ -14,6 +14,19 @@ export default {
   daisyui: {
     themes: [
       'light',
+      {
+        light: {
+          primary: '#2563eb',
+          secondary: '#7c3aed',
+          accent: '#f97316',
+          neutral: '#1f2937',
+          'base-100': '#f4f6fb',
+          info: '#0ea5e9',
+          success: '#22c55e',
+          warning: '#facc15',
+          error: '#ef4444',
+        },
+      },
       'dark',
       {
         munlight: {
@@ -30,6 +43,7 @@ export default {
       },
       'business',
     ],
+    // lightTheme: 'cmyk',
     darkTheme: 'business',
   },
   plugins: [daisyui],

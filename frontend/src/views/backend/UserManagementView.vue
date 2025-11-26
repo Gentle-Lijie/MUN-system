@@ -1,3 +1,4 @@
+<!-- eslint-disable prettier/prettier -->
 <script setup lang="ts">
 import { computed, onMounted, reactive, ref, watch } from 'vue'
 import FormField from '@/components/common/FormField.vue'
@@ -49,6 +50,18 @@ const roleLabelMap: Record<UserRole, string> = {
 const permissionsModalOpen = ref(false)
 const editingPermissions = ref<string[]>([])
 const savingPermissions = ref(false)
+
+const editModalOpen = ref(false)
+const editingUser = ref<UserRecord | null>(null)
+const savingUser = ref(false)
+
+const editUserForm = reactive({
+  name: '',
+  email: '',
+  role: 'delegate' as UserRole,
+  organization: '',
+  phone: '',
+})
 
 const permissionGroups = {
   admin: ['users:manage', 'presidium:manage', 'delegates:manage', 'logs:read'],
@@ -337,6 +350,57 @@ const savePermissions = async () => {
   }
 }
 
+const openEditModal = () => {
+  if (!selectedUser.value) return
+  editingUser.value = { ...selectedUser.value }
+  editUserForm.name = selectedUser.value.name
+  editUserForm.email = selectedUser.value.email
+  editUserForm.role = selectedUser.value.role
+  editUserForm.organization = selectedUser.value.organization || ''
+  editUserForm.phone = selectedUser.value.phone || ''
+  editModalOpen.value = true
+}
+
+const saveUser = async () => {
+  if (!editingUser.value) return
+  savingUser.value = true
+  errorMessage.value = ''
+  successMessage.value = ''
+  try {
+    const response = await fetch(`/api/users/${editingUser.value.id}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify({
+        name: editUserForm.name,
+        email: editUserForm.email,
+        role: editUserForm.role,
+        organization: editUserForm.organization,
+        phone: editUserForm.phone,
+      }),
+    })
+    if (!response.ok) {
+      const err = await response.json().catch(() => ({}))
+      throw new Error(err?.message || '更新用户信息失败')
+    }
+    const updatedUser = await response.json()
+    // 更新用户列表中的数据
+    const index = users.value.findIndex((u) => u.id === editingUser.value!.id)
+    if (index !== -1) {
+      users.value[index] = updatedUser
+    }
+    // 更新选中用户
+    selectedUser.value = updatedUser
+    editModalOpen.value = false
+    successMessage.value = '用户信息已更新'
+  } catch (error) {
+    console.error(error)
+    errorMessage.value = error instanceof Error ? error.message : '更新用户信息失败'
+  } finally {
+    savingUser.value = false
+  }
+}
+
 onMounted(() => {
   fetchUsers()
 })
@@ -368,11 +432,7 @@ watch(roleFilter, () => {
       <div class="space-y-4">
         <div class="flex flex-wrap gap-3 items-center">
           <div class="flex flex-wrap gap-3 grow">
-            <FormField
-              legend="关键词"
-              label="按姓名 / 邮箱 / 电话搜索"
-              fieldsetClass="grow min-w-[12rem]"
-            >
+            <FormField legend="关键词" fieldsetClass="grow min-w-[12rem]">
               <input
                 v-model="keyword"
                 type="text"
@@ -381,7 +441,7 @@ watch(roleFilter, () => {
                 @keyup.enter="handleSearch"
               />
             </FormField>
-            <FormField legend="学校筛选" label="按学校搜索" fieldsetClass="grow min-w-[12rem]">
+            <FormField legend="学校筛选" fieldsetClass="grow min-w-[12rem]">
               <input
                 v-model="committeeKeyword"
                 type="text"
@@ -390,8 +450,8 @@ watch(roleFilter, () => {
                 @keyup.enter="handleSearch"
               />
             </FormField>
-            <FormField legend="角色筛选" label="选择角色" fieldsetClass="w-40">
-              <select v-model="roleFilter" class="select select-bordered w-full">
+            <FormField legend="角色筛选" fieldsetClass="w-40">
+              <select v-model="roleFilter" class="select select-bordered">
                 <option v-for="option in roleOptions" :key="option.value" :value="option.value">
                   {{ option.label }}
                 </option>
@@ -466,8 +526,7 @@ watch(roleFilter, () => {
                 class="cursor-pointer"
                 :class="selectedUser?.id === user.id ? 'bg-primary/10' : ''"
                 @click="handleRowClick(user)"
-              
-                >
+              >
                 <td>
                   <div class="avatar placeholder">
                     <div
@@ -538,44 +597,47 @@ watch(roleFilter, () => {
               <span v-if="resetting" class="loading loading-spinner loading-xs"></span>
               <span>重置密码</span>
             </button>
+            <button class="btn btn-outline btn-sm" @click="openEditModal">编辑信息</button>
             <button class="btn btn-outline btn-sm" @click="openPermissionsModal">配置权限</button>
           </div>
         </div>
 
         <form class="border border-base-200 rounded-xl p-4 space-y-3" @submit.prevent="createUser">
           <h3 class="font-semibold">创建新用户</h3>
-          <FormField legend="姓名" label="请输入姓名">
-            <input
-              v-model="newUserForm.name"
-              type="text"
-              class="input input-bordered"
-              placeholder="输入姓名"
-            />
-          </FormField>
-          <FormField legend="邮箱" label="用于登录的邮箱">
-            <input
-              v-model="newUserForm.email"
-              type="email"
-              class="input input-bordered"
-              placeholder="user@mun.org"
-            />
-          </FormField>
-          <FormField legend="角色" label="分配系统角色">
-            <select v-model="newUserForm.role" class="select select-bordered">
-              <option value="dais">主席团</option>
-              <option value="admin">管理员</option>
-              <option value="delegate">代表</option>
-              <option value="observer">观察员</option>
-            </select>
-          </FormField>
-          <FormField legend="学校/组织" label="输入所属单位">
-            <input
-              v-model="newUserForm.organization"
-              type="text"
-              class="input input-bordered"
-              placeholder="如 UNSC / 秘书处"
-            />
-          </FormField>
+          <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            <FormField legend="姓名">
+              <input
+                v-model="newUserForm.name"
+                type="text"
+                class="input input-bordered"
+                placeholder="输入姓名"
+              />
+            </FormField>
+            <FormField legend="邮箱">
+              <input
+                v-model="newUserForm.email"
+                type="email"
+                class="input input-bordered"
+                placeholder="user@mun.org"
+              />
+            </FormField>
+            <FormField legend="角色">
+              <select v-model="newUserForm.role" class="select select-bordered">
+                <option value="dais">主席团</option>
+                <option value="admin">管理员</option>
+                <option value="delegate">代表</option>
+                <option value="observer">观察员</option>
+              </select>
+            </FormField>
+            <FormField legend="学校/组织">
+              <input
+                v-model="newUserForm.organization"
+                type="text"
+                class="input input-bordered"
+                placeholder="如 UNSC / 秘书处"
+              />
+            </FormField>
+          </div>
           <button class="btn btn-primary w-full" type="submit" :disabled="creating">
             <span v-if="creating" class="loading loading-spinner loading-sm"></span>
             <span>立即创建</span>
@@ -628,6 +690,67 @@ watch(roleFilter, () => {
           <button class="btn" @click="permissionsModalOpen = false">取消</button>
           <button class="btn btn-primary" :disabled="savingPermissions" @click="savePermissions">
             <span v-if="savingPermissions" class="loading loading-spinner loading-xs"></span>
+            <span>保存</span>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Edit User Modal -->
+    <div class="modal" :class="{ 'modal-open': editModalOpen }">
+      <div class="modal-box max-w-lg">
+        <h3 class="font-bold text-lg">编辑用户信息 - {{ editingUser?.name }}</h3>
+        <p class="py-4">修改用户的基本信息，角色变更将影响用户权限。</p>
+        <form class="space-y-4" @submit.prevent="saveUser">
+          <div class="grid grid-cols-1 gap-4">
+            <FormField legend="姓名">
+              <input
+                v-model="editUserForm.name"
+                type="text"
+                class="input input-bordered"
+                placeholder="输入姓名"
+                required
+              />
+            </FormField>
+            <FormField legend="邮箱">
+              <input
+                v-model="editUserForm.email"
+                type="email"
+                class="input input-bordered"
+                placeholder="user@mun.org"
+                required
+              />
+            </FormField>
+            <FormField legend="角色">
+              <select v-model="editUserForm.role" class="select select-bordered" required>
+                <option value="dais">主席团</option>
+                <option value="admin">管理员</option>
+                <option value="delegate">代表</option>
+                <option value="observer">观察员</option>
+              </select>
+            </FormField>
+            <FormField legend="学校/组织">
+              <input
+                v-model="editUserForm.organization"
+                type="text"
+                class="input input-bordered"
+                placeholder="如 UNSC / 秘书处"
+              />
+            </FormField>
+            <FormField legend="联系电话">
+              <input
+                v-model="editUserForm.phone"
+                type="tel"
+                class="input input-bordered"
+                placeholder="联系电话"
+              />
+            </FormField>
+          </div>
+        </form>
+        <div class="modal-action">
+          <button class="btn" @click="editModalOpen = false">取消</button>
+          <button class="btn btn-primary" :disabled="savingUser" @click="saveUser">
+            <span v-if="savingUser" class="loading loading-spinner loading-xs"></span>
             <span>保存</span>
           </button>
         </div>

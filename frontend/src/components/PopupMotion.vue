@@ -77,7 +77,6 @@
                       <input
                         v-model="formState.country"
                         type="text"
-                        placeholder="请输入发起国家"
                         class="grow bg-transparent focus:outline-none"
                         required
                       />
@@ -118,7 +117,6 @@
                           type="number"
                           min="10"
                           max="3600"
-                          placeholder="例如 120"
                           class="grow bg-transparent focus:outline-none"
                           required
                         />
@@ -146,7 +144,6 @@
                           type="number"
                           min="30"
                           max="7200"
-                          placeholder="例如 600"
                           class="grow bg-transparent focus:outline-none"
                           required
                         />
@@ -180,7 +177,6 @@
                       type="number"
                       min="10"
                       max="3600"
-                      placeholder="例如 120"
                       class="grow bg-transparent focus:outline-none"
                       required
                     />
@@ -212,7 +208,6 @@
                       type="number"
                       min="30"
                       max="7200"
-                      placeholder="例如 600"
                       class="grow bg-transparent focus:outline-none"
                       required
                     />
@@ -223,7 +218,6 @@
                     v-model="formState.notes"
                     class="textarea textarea-bordered text-base"
                     rows="4"
-                    placeholder="输入补充说明或主持要点"
                   ></textarea>
                 </FormField>
                 <button

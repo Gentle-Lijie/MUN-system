@@ -1,11 +1,11 @@
 <template>
-  <fieldset class="fieldset w-full" :class="fieldsetClass">
+  <fieldset class="fieldset" :class="fieldsetClass">
     <legend class="fieldset-legend text-base font-semibold mb-3" :class="legendClass">
       {{ legend }}
     </legend>
     <div class="form-control w-full gap-2" :class="labelClass">
-      <span class="label-text text-sm text-base-content/70" :class="labelTextClass">
-        {{ label ?? legend }}<br />
+      <span v-if="label" class="label-text text-sm text-base-content/70" :class="labelTextClass">
+        {{ label }}<br />
       </span>
       <slot />
     </div>
