@@ -27,7 +27,7 @@ const filteredFiles = computed(() => {
 const fetchReferences = async () => {
   loading.value = true
   try {
-    const response = await api.getFileReferences()
+    const response = await api.getFileReferences({ visibility: ['all_committees', 'public'] })
     files.value = response.items
   } catch (error) {
     console.error('Failed to load file references', error)
@@ -81,6 +81,9 @@ onMounted(() => {
               <span class="badge badge-secondary">{{ selectedFile.type }}</span>
               <span v-if="selectedFile.committee" class="badge badge-outline">
                 {{ selectedFile.committee.name }} · {{ selectedFile.committee.code }}
+              </span>
+              <span class="badge badge-ghost">
+                {{ selectedFile.visibility === 'all_committees' ? '全部会场' : '公开' }}
               </span>
             </div>
             <p class="text-sm text-base-content/60">可在动议弹窗中直接引用上述文件。</p>
@@ -141,6 +144,9 @@ onMounted(() => {
                 <div class="flex items-center gap-2">
                   <span class="text-lg font-semibold">{{ file.title }}</span>
                   <span class="badge badge-outline">{{ file.type }}</span>
+                  <span class="badge badge-ghost badge-sm">
+                    {{ file.visibility === 'all_committees' ? '全部会场' : '公开' }}
+                  </span>
                 </div>
                 <p class="text-sm text-base-content/60">
                   {{

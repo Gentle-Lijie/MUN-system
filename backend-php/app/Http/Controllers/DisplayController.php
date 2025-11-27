@@ -43,6 +43,7 @@ class DisplayController extends Controller
 
         $twoThirdsMajority = (int) ceil($presentDelegates * 2 / 3);
         $halfMajority = (int) ceil($presentDelegates / 2);
+        $threeQuartersMajority = (int) ceil($presentDelegates * 3 / 4);
         $twentyPercentMajority = (int) ceil($presentDelegates * 0.2);
 
         // 获取当前活跃的 CommitteeSession 及其 current_speaker_list_id
@@ -141,12 +142,40 @@ class DisplayController extends Controller
                 $description .= ' · 总时长 ' . $motion->total_time_seconds . ' 秒';
             }
 
+            $voteSummary = null;
+            $voteResult = $motion->vote_result;
+            if (is_string($voteResult)) {
+                $decoded = json_decode($voteResult, true);
+                if (json_last_error() === JSON_ERROR_NONE) {
+                    $voteResult = $decoded;
+                }
+            }
+            if (is_array($voteResult)) {
+                $summary = $voteResult['summary'] ?? null;
+                if (is_array($summary)) {
+                    $voteSummary = [
+                        'passed' => (bool) ($summary['passed'] ?? false),
+                        'yes' => (int) ($summary['yes'] ?? 0),
+                        'no' => (int) ($summary['no'] ?? 0),
+                        'abstain' => (int) ($summary['abstain'] ?? 0),
+                    ];
+                    $description .= sprintf(
+                        ' · 投票%s（赞成 %d · 反对 %d · 弃权 %d）',
+                        $voteSummary['passed'] ? '通过' : '未通过',
+                        $voteSummary['yes'],
+                        $voteSummary['no'],
+                        $voteSummary['abstain']
+                    );
+                }
+            }
+
             $historyEvents[] = [
                 'id' => $motion->id,
                 'title' => $title . '：' . $motionTypeCn,
                 'description' => $description,
                 'proposer' => $proposerInfo,
                 'createdAt' => $motion->created_at?->toIso8601String(),
+                'voteResult' => $voteSummary,
             ];
         }
 
@@ -187,6 +216,7 @@ class DisplayController extends Controller
             'statistics' => [
                 'total' => $totalDelegates,
                 'present' => $presentDelegates,
+                'threeQuarters' => $threeQuartersMajority,
                 'twoThirds' => $twoThirdsMajority,
                 'half' => $halfMajority,
                 'twentyPercent' => $twentyPercentMajority,
@@ -292,6 +322,7 @@ class DisplayController extends Controller
         return $this->json([
             'total' => $totalDelegates,
             'present' => $presentDelegates,
+            'threeQuarters' => (int) ceil($presentDelegates * 3 / 4),
             'twoThirds' => (int) ceil($presentDelegates * 2 / 3),
             'half' => (int) ceil($presentDelegates / 2),
             'twentyPercent' => (int) ceil($presentDelegates * 0.2),

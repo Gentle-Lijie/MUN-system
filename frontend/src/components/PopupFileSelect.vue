@@ -13,9 +13,10 @@
           @click="selectFile(file)"
         >
           <div class="font-medium">{{ file.title }}</div>
-          <div class="text-sm text-base-content/70">
-            {{ file.type }}
-            {{ file.committee ? `· ${file.committee.name}` : '' }}
+          <div class="text-sm text-base-content/70 flex items-center gap-2">
+            <span>{{ file.type }}</span>
+            <span v-if="file.committee">· {{ file.committee.name }}</span>
+            <span class="badge badge-ghost badge-sm">{{ visibilityLabel(file.visibility) }}</span>
           </div>
         </div>
         <div v-if="files.length === 0" class="text-center text-base-content/60 py-4">
@@ -49,13 +50,20 @@ const loading = ref(false)
 const fetchFiles = async () => {
   loading.value = true
   try {
-    const response = await api.getFileReferences()
+    const response = await api.getFileReferences({ visibility: ['all_committees', 'public'] })
     files.value = response.items
   } catch (error) {
     console.error('Failed to fetch files:', error)
   } finally {
     loading.value = false
   }
+}
+
+const visibilityLabel = (visibility?: FileReference['visibility']) => {
+  if (visibility === 'all_committees') return '全部会场'
+  if (visibility === 'public') return '公开'
+  if (visibility === 'committee_only') return '主席团'
+  return '公开'
 }
 
 const selectFile = (file: FileReference) => {

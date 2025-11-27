@@ -17,8 +17,8 @@
             <div class="space-y-3 overflow-y-auto pr-1 max-h-full">
               <button v-for="motion in motions" :key="motion.id" type="button"
                 class="w-full rounded-2xl border px-4 py-4 text-left transition" :class="selectedMotionId === motion.id
-                    ? 'border-primary bg-primary/10 shadow-lg'
-                    : 'border-base-300 bg-base-100/70 hover:border-base-200'
+                  ? 'border-primary bg-primary/10 shadow-lg'
+                  : 'border-base-300 bg-base-100/70 hover:border-base-200'
                   " @click="selectedMotionId = motion.id">
                 <div>
                   <p class="text-xl font-semibold">{{ motion.title }}</p>
@@ -36,7 +36,7 @@
             </header>
             <div class="flex flex-col gap-5">
               <div class="grid gap-4">
-                <div v-if="activeMotion?.requires.country" class="grid grid-cols-1 gap-3 lg:grid-cols-[50%-50%]">
+                <div v-if="activeMotion?.requires.country" class="grid grid-cols-1 gap-3 lg:grid-cols-[1fr_auto]">
                   <FormField legend="发起国家" label="手动输入发起国家">
                     <div class="input input-bordered flex items-center gap-2">
                       <svg class="h-[1.2em] opacity-50" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"
@@ -112,8 +112,7 @@
                   </div>
                 </FormField>
                 <FormField legend="附加说明（可选）" label="补充主持要点或文件信息">
-                  <textarea v-model="formState.notes" class="textarea textarea-bordered text-base w-full"
-                    rows="4"></textarea>
+                  <textarea v-model="formState.notes" class="textarea textarea-bordered text-base" rows="4"></textarea>
                 </FormField>
                 <button v-if="activeMotion?.id === 'reading' || activeMotion?.id === 'voting-doc'" type="button"
                   class="btn btn-outline btn-lg text-lg mb-3" @click="showFileSelect = true">
@@ -145,11 +144,39 @@
       <button @click.prevent="handleClose">关闭</button>
     </form>
     <PopupFileSelect v-model="showFileSelect" @select="handleFileSelect" />
+    <PopupRollCall
+      v-model="showRollCall"
+      :delegates="delegates"
+      @confirm="handleRollCallConfirm"
+      @cancel="handleRollCallCancel"
+    />
+    <PopupMajority
+      v-model="showMajority"
+      :stats="majorityStats"
+      @select="handleMajoritySelect"
+      @cancel="handleMajorityCancel"
+    />
+    <PopupVoting
+      v-model="showVoting"
+      :delegates="votingDelegates"
+      @complete="handleVotingComplete"
+      @cancel="handleVotingCancel"
+    />
+    <PopupVoteResult
+      v-model="showVoteResult"
+      :result="voteResultPayload"
+      @confirm="handleVoteResultConfirm"
+      @retry="handleVoteResultRetry"
+    />
   </dialog>
 </template>
 
 <script setup lang="ts">
 import { computed, reactive, ref, watch } from 'vue'
+import PopupVoting, { type VotingSummary, type VoteRecord as VotingRecord, type Delegate as VotingDelegate } from '@/components/PopupVoting.vue'
+import PopupRollCall, { type AttendanceStatus } from '@/components/PopupRollCall.vue'
+import PopupMajority, { type MajorityOption, type MajorityStats } from '@/components/PopupMajority.vue'
+import PopupVoteResult from '@/components/PopupVoteResult.vue'
 import PopupFileSelect from '@/components/PopupFileSelect.vue'
 import FormField from '@/components/common/FormField.vue'
 import { API_BASE } from '@/services/api'
@@ -172,6 +199,22 @@ type MotionFormState = {
   notes: string
   triggerRollCall: boolean
   proposerId?: number
+  fileId?: number | null
+}
+
+export type VoteResultPayload = {
+  majority: MajorityOption
+  rollCall: { total: number; present: number }
+  summary: {
+    yes: number
+    no: number
+    abstain: number
+    effectiveTotal: number
+    ratio: number
+    requiredVotes: number
+    passed: boolean
+  }
+  votes: VotingRecord[]
 }
 
 const motions: MotionDefinition[] = [
@@ -264,11 +307,11 @@ const motions: MotionDefinition[] = [
 const props = defineProps<{ modelValue: boolean; committeeId?: string }>()
 const emit = defineEmits<{
   (_e: 'update:modelValue', _value: boolean): void
-  (_e: 'pass', payload: { motion: MotionDefinition; form: MotionFormState }): void
+  (_e: 'pass', payload: { motion: MotionDefinition; form: MotionFormState; voteResult?: VoteResultPayload | null }): void
   (_e: 'fail', payload: { motion: MotionDefinition; form: MotionFormState }): void
 }>()
 
-const delegates = ref<any[]>([])
+const delegates = ref<VotingDelegate[]>([])
 
 const selectedMotionId = ref(motions[0]?.id ?? '')
 const formState = reactive<MotionFormState>({
@@ -278,10 +321,28 @@ const formState = reactive<MotionFormState>({
   notes: '',
   triggerRollCall: false,
   proposerId: undefined,
+  fileId: null,
 })
 const showFileSelect = ref(false)
+const showRollCall = ref(false)
+const showMajority = ref(false)
+const showVoting = ref(false)
+const showVoteResult = ref(false)
+const selectedFile = ref<FileReference | null>(null)
+const majorityStats = ref<MajorityStats | null>(null)
+const selectedMajority = ref<MajorityOption | null>(null)
+const voteResultPayload = ref<VoteResultPayload | null>(null)
+const rollCallStats = ref<{ total: number; present: number } | null>(null)
+const rollCallAttendance = ref<Record<number, AttendanceStatus>>({})
 
 const activeMotion = computed(() => motions.find((motion) => motion.id === selectedMotionId.value))
+const isVotingMotion = computed(() => activeMotion.value?.id === 'voting-doc')
+const votingDelegates = computed<VotingDelegate[]>(() => {
+  if (!Object.keys(rollCallAttendance.value).length) {
+    return delegates.value
+  }
+  return delegates.value.filter((delegate) => rollCallAttendance.value[delegate.id] !== 'absent')
+})
 
 // 加载代表列表
 const loadDelegates = async () => {
@@ -317,6 +378,9 @@ function resetForm() {
   formState.triggerRollCall = false
   formState.proposerId = undefined
   selectedMotionId.value = motions[0]?.id ?? ''
+  formState.fileId = null
+  selectedFile.value = null
+  resetVotingFlow()
 }
 
 // 监听动议类型变化，自动设置点名选项
@@ -351,8 +415,12 @@ watch(
   }
 )
 
-function handlePass() {
+const handlePass = async () => {
   if (!activeMotion.value) return
+  if (isVotingMotion.value) {
+    startVotingWorkflow()
+    return
+  }
   emit('pass', {
     motion: activeMotion.value,
     form: { ...formState },
@@ -372,8 +440,133 @@ function handleFail() {
 }
 
 function handleFileSelect(file: FileReference) {
+  selectedFile.value = file
+  formState.fileId = file.id
   const linked = `关联文件: ${file.title}`
-  formState.notes = [formState.notes, linked].filter(Boolean).join('\n')
+  const existingNotes = formState.notes.split('\n').filter((line) => line.trim().length > 0)
+  if (!existingNotes.includes(linked)) {
+    formState.notes = [...existingNotes, linked].join('\n')
+  }
+}
+
+const startVotingWorkflow = () => {
+  resetVotingFlow()
+  if (formState.triggerRollCall) {
+    showRollCall.value = true
+  } else {
+    const attendance: Record<number, AttendanceStatus> = {}
+    delegates.value.forEach((delegate) => {
+      attendance[delegate.id] = 'present'
+    })
+    rollCallAttendance.value = attendance
+    rollCallStats.value = { total: delegates.value.length, present: delegates.value.length }
+    majorityStats.value = buildMajorityStats(delegates.value.length, delegates.value.length)
+    showMajority.value = true
+  }
+}
+
+const buildMajorityStats = (total: number, present: number): MajorityStats => {
+  const safePresent = Math.max(present, 0)
+  return {
+    total,
+    present: safePresent,
+    threeQuarters: Math.max(0, Math.ceil(safePresent * 0.75)),
+    twoThirds: Math.max(0, Math.ceil(safePresent * (2 / 3))),
+    half: Math.max(0, Math.ceil(safePresent * 0.5)),
+    twentyPercent: Math.max(0, Math.ceil(safePresent * 0.2))
+  }
+}
+
+const handleRollCallConfirm = async (attendance: Record<string, AttendanceStatus>) => {
+  const normalized = Object.entries(attendance).reduce<Record<number, AttendanceStatus>>((acc, [id, status]) => {
+    acc[Number(id)] = status
+    return acc
+  }, {})
+
+  rollCallAttendance.value = normalized
+  const present = Object.values(normalized).filter((status) => status === 'present').length
+  rollCallStats.value = { total: delegates.value.length, present }
+  majorityStats.value = buildMajorityStats(delegates.value.length, present)
+
+  await submitRollCall(attendance)
+
+  showMajority.value = true
+}
+
+const handleRollCallCancel = () => {
+  resetVotingFlow()
+}
+
+const submitRollCall = async (attendance: Record<string, AttendanceStatus>) => {
+  if (!props.committeeId) return
+  try {
+    await fetch(`${API_BASE}/api/display/roll-call`, {
+      method: 'POST',
+      credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ committeeId: Number(props.committeeId), attendance })
+    })
+  } catch (error) {
+    console.error('Failed to submit roll call:', error)
+  }
+}
+
+const handleMajoritySelect = (option: MajorityOption) => {
+  selectedMajority.value = option
+  showVoting.value = true
+}
+
+const handleMajorityCancel = () => {
+  resetVotingFlow()
+}
+
+const handleVotingComplete = (result: VotingSummary) => {
+  if (!selectedMajority.value || !rollCallStats.value) return
+  voteResultPayload.value = {
+    majority: selectedMajority.value,
+    rollCall: rollCallStats.value,
+    summary: {
+      ...result.summary,
+      requiredVotes: selectedMajority.value.requiredVotes,
+      passed: result.summary.yes >= selectedMajority.value.requiredVotes
+    },
+    votes: result.votes
+  }
+  showVoting.value = false
+  showVoteResult.value = true
+}
+
+const handleVotingCancel = () => {
+  resetVotingFlow()
+}
+
+const handleVoteResultConfirm = () => {
+  if (!activeMotion.value || !voteResultPayload.value) return
+  emit('pass', {
+    motion: activeMotion.value,
+    form: { ...formState },
+    voteResult: voteResultPayload.value
+  })
+  emit('update:modelValue', false)
+  resetForm()
+}
+
+const handleVoteResultRetry = () => {
+  showVoteResult.value = false
+  showVoting.value = true
+  voteResultPayload.value = null
+}
+
+const resetVotingFlow = () => {
+  showRollCall.value = false
+  showMajority.value = false
+  showVoting.value = false
+  showVoteResult.value = false
+  selectedMajority.value = null
+  majorityStats.value = null
+  voteResultPayload.value = null
+  rollCallStats.value = null
+  rollCallAttendance.value = {}
 }
 
 function handleClose() {

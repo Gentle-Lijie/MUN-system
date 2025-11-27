@@ -3,6 +3,8 @@ import { computed, onMounted, onUnmounted, ref } from 'vue'
 import { useRoute } from 'vue-router'
 import PopupDelegate from '@/components/PopupDelegate.vue'
 import PopupMotion from '@/components/PopupMotion.vue'
+import type { VoteResultPayload } from '@/components/PopupMotion.vue'
+import PopupRollCall, { type AttendanceStatus, type RollCallDelegate } from '@/components/PopupRollCall.vue'
 import { API_BASE } from '@/services/api'
 
 const route = useRoute()
@@ -15,11 +17,25 @@ const showStartSessionOverlay = ref(false)
 
 // 数据状态
 const committee = ref<any>(null)
-const statistics = ref({ total: 0, present: 0, twoThirds: 0, half: 0, twentyPercent: 0 })
+const statistics = ref({
+  total: 0,
+  present: 0,
+  threeQuarters: 0,
+  twoThirds: 0,
+  half: 0,
+  twentyPercent: 0,
+})
 const speakerQueue = ref<any[]>([])
-const historyEvents = ref<any[]>([])
-const delegates = ref<any[]>([])
-const rollCallAttendance = ref<Record<string, 'present' | 'absent'>>({})
+type HistoryVoteResult = {
+  passed: boolean
+  yes: number
+  no: number
+  abstain: number
+}
+
+const historyEvents = ref<Array<Record<string, any> & { voteResult?: HistoryVoteResult | null }>>([])
+const delegates = ref<RollCallDelegate[]>([])
+const rollCallAttendance = ref<Record<string, AttendanceStatus>>({})
 const speakerListId = ref<string | null>(null)
 const speakerListCurrentIndex = ref(0)
 const speakerListTotalCount = ref(0)
@@ -60,6 +76,18 @@ type MotionSubmission = {
     unitTime: number
     totalTime: number
     notes: string
+  }
+  voteResult?: VoteResultPayload | null
+}
+
+const summarizeVoteResult = (payload?: VoteResultPayload | null): HistoryVoteResult | null => {
+  const summary = payload?.summary
+  if (!summary) return null
+  return {
+    passed: Boolean(summary.passed),
+    yes: summary.yes ?? 0,
+    no: summary.no ?? 0,
+    abstain: summary.abstain ?? 0,
   }
 }
 
@@ -221,21 +249,23 @@ const loadDelegates = async () => {
     if (!response.ok) throw new Error('Failed to load delegates')
 
     const data = await response.json()
-    delegates.value = data.items || []
+    delegates.value = (data.items || []) as RollCallDelegate[]
 
-    // 初始化点名状态
+    const attendance: Record<string, AttendanceStatus> = {}
     delegates.value.forEach((d) => {
-      rollCallAttendance.value[d.id.toString()] = d.status || 'present'
+      const status = (d.status as AttendanceStatus) ?? 'present'
+      attendance[d.id.toString()] = status
     })
+    rollCallAttendance.value = attendance
   } catch (error) {
     console.error('Failed to load delegates:', error)
   }
 }
 
 // 处理点名按钮点击
-const handleRollCallClick = () => {
+const handleRollCallClick = async () => {
+  await loadDelegates()
   showRollCallModal.value = true
-  loadDelegates()
 }
 
 // 开始会议
@@ -262,14 +292,15 @@ const startSession = async () => {
 }
 
 // 提交点名结果
-const submitRollCall = async () => {
+const submitRollCall = async (attendanceOverride?: Record<string, AttendanceStatus>) => {
   try {
+    const attendancePayload = attendanceOverride ?? rollCallAttendance.value
     const response = await apiFetch('/api/display/roll-call', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         committeeId: committeeId.value,
-        attendance: rollCallAttendance.value,
+        attendance: attendancePayload,
       }),
     })
 
@@ -277,13 +308,28 @@ const submitRollCall = async () => {
 
     const data = await response.json()
     statistics.value = data
+    rollCallAttendance.value = attendancePayload
 
     showRollCallModal.value = false
     await loadBoardData()
+    return true
   } catch (error) {
     console.error('Failed to submit roll call:', error)
     alert('提交点名失败')
+    return false
   }
+}
+
+const handleRollCallConfirm = async (attendance: Record<string, AttendanceStatus>) => {
+  rollCallAttendance.value = attendance
+  const ok = await submitRollCall(attendance)
+  if (!ok) {
+    showRollCallModal.value = true
+  }
+}
+
+const handleRollCallCancel = () => {
+  showRollCallModal.value = false
 }
 
 const onDelegateConfirm = async (delegate?: any) => {
@@ -360,7 +406,7 @@ const switchSpeakerList = async (direction: 'prev' | 'next') => {
   }
 }
 
-const handleMotionPass = async ({ motion, form }: MotionSubmission) => {
+const handleMotionPass = async ({ motion, form, voteResult }: MotionSubmission) => {
   try {
     // 映射前端动议ID到后端motionType (必须与数据库 ENUM 一致)
     const motionTypeMap: Record<string, string> = {
@@ -379,19 +425,27 @@ const handleMotionPass = async ({ motion, form }: MotionSubmission) => {
     }
 
     const motionType = motionTypeMap[motion.id] || motion.id
+    const summarizedVote = summarizeVoteResult(voteResult)
+    const motionState = summarizedVote ? (summarizedVote.passed ? 'passed' : 'rejected') : 'passed'
 
     // 调用后端API创建动议
+    const payload: Record<string, any> = {
+      committeeId: committeeId.value,
+      motionType: motionType,
+      proposerId: (form as any).proposerId || null,
+      unitTimeSeconds: form.unitTime || null,
+      totalTimeSeconds: form.totalTime || null,
+      state: motionState,
+    }
+
+    if (voteResult) {
+      payload.voteResult = voteResult
+    }
+
     const response = await apiFetch('/api/motions', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        committeeId: committeeId.value,
-        motionType: motionType,
-        proposerId: (form as any).proposerId || null,
-        unitTimeSeconds: form.unitTime || null,
-        totalTimeSeconds: form.totalTime || null,
-        state: 'passed',
-      }),
+      body: JSON.stringify(payload),
     })
 
     if (!response.ok) throw new Error('Failed to create motion')
@@ -403,7 +457,7 @@ const handleMotionPass = async ({ motion, form }: MotionSubmission) => {
       speakerListId.value = data.motion.speakerListId
     }
 
-    const summary: string[] = ['获得通过']
+    const summary: string[] = [motionState === 'passed' ? '获得通过' : '未获通过']
     if (motion.requires.country && form.country) {
       summary.push(`由 ${form.country} 发起`)
     }
@@ -416,10 +470,16 @@ const handleMotionPass = async ({ motion, form }: MotionSubmission) => {
     if (form.notes) {
       summary.push(form.notes)
     }
+    if (summarizedVote) {
+      summary.push(
+        `投票${summarizedVote.passed ? '通过' : '未通过'}（赞成 ${summarizedVote.yes} · 反对 ${summarizedVote.no} · 弃权 ${summarizedVote.abstain}）`
+      )
+    }
 
     historyEvents.value.unshift({
-      title: `动议通过：${motion.title}`,
+      title: `${motionState === 'passed' ? '动议通过' : '动议未通过'}：${motion.title}`,
       description: summary.join(' · ') || '请查看主持人备注。',
+      voteResult: summarizedVote,
     })
 
     // 如果需要发起点名
@@ -684,52 +744,14 @@ onUnmounted(() => {
       </button>
     </div>
 
-    <!-- 点名模态框 -->
-    <dialog :open="showRollCallModal" class="modal">
-      <div class="modal-box max-w-4xl">
-        <h3 class="text-2xl font-bold mb-4">点名</h3>
-        <div class="max-h-96 overflow-y-auto space-y-2">
-          <div
-            v-for="delegate in delegates"
-            :key="delegate.id"
-            class="flex items-center justify-between p-3 bg-base-200 rounded"
-          >
-            <span class="text-lg">{{ delegate.country }} - {{ delegate.userName }}</span>
-            <div class="flex gap-2">
-              <button
-                class="btn btn-sm"
-                :class="
-                  rollCallAttendance[delegate.id.toString()] === 'present'
-                    ? 'btn-success'
-                    : 'btn-ghost'
-                "
-                @click="rollCallAttendance[delegate.id.toString()] = 'present'"
-              >
-                出席
-              </button>
-              <button
-                class="btn btn-sm"
-                :class="
-                  rollCallAttendance[delegate.id.toString()] === 'absent'
-                    ? 'btn-error'
-                    : 'btn-ghost'
-                "
-                @click="rollCallAttendance[delegate.id.toString()] = 'absent'"
-              >
-                缺席
-              </button>
-            </div>
-          </div>
-        </div>
-        <div class="modal-action">
-          <button class="btn btn-ghost" @click="showRollCallModal = false">取消</button>
-          <button class="btn btn-primary" @click="submitRollCall">确认</button>
-        </div>
-      </div>
-      <form method="dialog" class="modal-backdrop">
-        <button @click="showRollCallModal = false">close</button>
-      </form>
-    </dialog>
+    <PopupRollCall
+      v-model="showRollCallModal"
+      :delegates="delegates"
+      :initial-attendance="rollCallAttendance"
+      title="点名"
+      @confirm="handleRollCallConfirm"
+      @cancel="handleRollCallCancel"
+    />
 
     <div class="flex h-full min-h-0 flex-col gap-4 w-full">
       <header
@@ -764,6 +786,10 @@ onUnmounted(() => {
           <div class="stat place-items-end">
             <div class="stat-title text-lg">到场人数</div>
             <div class="stat-value text-5xl">{{ statistics.present }}</div>
+          </div>
+          <div class="stat place-items-end">
+            <div class="stat-title text-lg">3/4 多数</div>
+            <div class="stat-value text-5xl">{{ statistics.threeQuarters }}</div>
           </div>
           <div class="stat place-items-end">
             <div class="stat-title text-lg">2/3 多数</div>
@@ -909,12 +935,23 @@ onUnmounted(() => {
           <div class="flex-1 min-h-0 overflow-y-auto px-8 py-6 space-y-4">
             <div
               v-for="event in historyEvents"
-              :key="event.title"
-              class="rounded-2xl border border-base-300 bg-base-200/40 px-4 py-3"
+              :key="event.id ?? event.title"
+              class="rounded-2xl border border-base-300 bg-base-200/40 px-4 py-3 space-y-3"
             >
               <div>
                 <h3 class="font-semibold text-xl">{{ event.title }}</h3>
                 <p class="text-lg text-base-content/70">{{ event.description }}</p>
+              </div>
+              <div v-if="event.voteResult" class="flex flex-wrap items-center gap-3 text-base">
+                <span
+                  class="badge badge-lg"
+                  :class="event.voteResult.passed ? 'badge-success' : 'badge-error'"
+                >
+                  {{ event.voteResult.passed ? '通过' : '未通过' }}
+                </span>
+                <span class="badge badge-outline badge-lg">赞成 {{ event.voteResult.yes }}</span>
+                <span class="badge badge-outline badge-lg">反对 {{ event.voteResult.no }}</span>
+                <span class="badge badge-outline badge-lg">弃权 {{ event.voteResult.abstain }}</span>
               </div>
             </div>
           </div>

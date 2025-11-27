@@ -38,6 +38,7 @@ export interface FileReference {
   id: number
   title: string
   type: string
+  visibility?: 'committee_only' | 'all_committees' | 'public'
   committee?: {
     id: number
     name: string
@@ -318,8 +319,13 @@ class ApiService {
     })
   }
 
-  async getFileReferences(): Promise<{ items: FileReference[] }> {
-    return this.request('/api/files/reference')
+  async getFileReferences(params?: { visibility?: Array<'committee_only' | 'all_committees' | 'public'> }): Promise<{ items: FileReference[] }> {
+    const query = new URLSearchParams()
+    if (params?.visibility && params.visibility.length > 0) {
+      query.set('visibility', params.visibility.join(','))
+    }
+    const suffix = query.toString() ? `?${query.toString()}` : ''
+    return this.request(`/api/files/reference${suffix}`)
   }
 
   async uploadFile(file: File): Promise<{ fileUrl: string; filename: string }> {

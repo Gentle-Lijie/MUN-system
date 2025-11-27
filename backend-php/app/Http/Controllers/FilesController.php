@@ -360,8 +360,17 @@ class FilesController extends Controller
         $user = AuthSupport::user($this->app, $request, true);
 
         $query = Files::where('status', 'published')
-            ->select('id', 'title', 'type', 'committee_id')
+            ->select('id', 'title', 'type', 'committee_id', 'visibility')
             ->with('committee:id,name,code');
+
+        $visibilityFilter = $request->query->get('visibility');
+        $allowedVisibility = $visibilityFilter
+            ? array_values(array_filter(array_map('trim', explode(',', (string) $visibilityFilter))))
+            : ['all_committees', 'public'];
+
+        if (!empty($allowedVisibility)) {
+            $query->whereIn('visibility', $allowedVisibility);
+        }
 
         // 可见性控制：管理员可以看到所有文件，其他用户根据visibility过滤
         if ($user->role !== 'admin') {
@@ -399,6 +408,7 @@ class FilesController extends Controller
                     'name' => $file->committee->name,
                     'code' => $file->committee->code,
                 ] : null,
+                'visibility' => $file->visibility,
             ])->all(),
         ]);
     }
