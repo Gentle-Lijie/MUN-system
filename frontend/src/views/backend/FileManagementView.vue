@@ -37,8 +37,8 @@ const statusOptions = [
 ]
 
 const visibilityOptions = [
-  { value: 'committee_only', label: '仅委员会' },
-  { value: 'all_committees', label: '所有委员会' },
+  { value: 'committee_only', label: '仅主席团' },
+  { value: 'all_committees', label: '会场公开' },
   { value: 'public', label: '公开' },
 ]
 
@@ -349,57 +349,50 @@ onMounted(() => {
                 placeholder="主席团反馈（可选）"
               ></textarea>
             </FormField>
-            <FormField legend="分类" label="选择文件分类">
-              <select
-                v-model="configForm.type"
-                class="select select-bordered select-sm w-full"
-                required
-              >
-                <option v-for="option in typeOptions" :key="option.value" :value="option.value">
-                  {{ option.label }}
-                </option>
-              </select>
-            </FormField>
 
-            <FormField legend="状态" label="选择审批状态">
-              <select
-                v-model="configForm.status"
-                class="select select-bordered select-sm w-full"
-                required
-              >
-                <option v-for="option in statusOptions" :key="option.value" :value="option.value">
-                  {{ option.label }}
-                </option>
-              </select>
-            </FormField>
+            <!-- 2x2 网格布局：分类、状态、可见性、委员会 -->
+            <div class="grid grid-cols-2 gap-4">
+              <FormField legend="分类">
+                <select v-model="configForm.type" class="select select-bordered w-full" required>
+                  <option v-for="option in typeOptions" :key="option.value" :value="option.value">
+                    {{ option.label }}
+                  </option>
+                </select>
+              </FormField>
 
-            <FormField legend="可见性" label="设置发布范围">
-              <select
-                v-model="configForm.visibility"
-                class="select select-bordered select-sm w-full"
-                required
-              >
-                <option
-                  v-for="option in visibilityOptions"
-                  :key="option.value"
-                  :value="option.value"
+              <FormField legend="状态">
+                <select v-model="configForm.status" class="select select-bordered w-full" required>
+                  <option v-for="option in statusOptions" :key="option.value" :value="option.value">
+                    {{ option.label }}
+                  </option>
+                </select>
+              </FormField>
+
+              <FormField legend="可见性">
+                <select
+                  v-model="configForm.visibility"
+                  class="select select-bordered w-full"
+                  required
                 >
-                  {{ option.label }}
-                </option>
-              </select>
-            </FormField>
+                  <option
+                    v-for="option in visibilityOptions"
+                    :key="option.value"
+                    :value="option.value"
+                  >
+                    {{ option.label }}
+                  </option>
+                </select>
+              </FormField>
 
-            <FormField legend="委员会" label="关联委员会">
-              <select
-                v-model="configForm.committee_id"
-                class="select select-bordered select-sm w-full"
-              >
-                <option value="">无</option>
-                <option v-for="venue in venues" :key="venue.id" :value="venue.id.toString()">
-                  {{ venue.name }} ({{ venue.code }})
-                </option>
-              </select>
-            </FormField>
+              <FormField legend="委员会">
+                <select v-model="configForm.committee_id" class="select select-bordered w-full">
+                  <option value="">无</option>
+                  <option v-for="venue in venues" :key="venue.id" :value="venue.id.toString()">
+                    {{ venue.name }} ({{ venue.code }})
+                  </option>
+                </select>
+              </FormField>
+            </div>
 
             <button type="submit" class="btn btn-primary btn-sm w-full">保存配置</button>
           </form>

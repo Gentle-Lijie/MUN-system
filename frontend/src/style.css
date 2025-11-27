@@ -81,7 +81,7 @@ background-color: var(--color-base-100);
     color: white;
 }
 
-:is(.input, .textarea, .file-input) {
+:is(.input, .textarea) {
     border: 2px solid transparent;
     border-bottom-color: var(--color-primary);
     background-color: var(--color-base-100);
@@ -91,8 +91,7 @@ background-color: var(--color-base-100);
 }
 
 .input:focus-visible,
-.textarea:focus-visible,
-.file-input:focus-visible {
+.textarea:focus-visible {
     border-color: var(--color-primary);
     border-radius: 0.75rem;
     outline: none;
@@ -140,7 +139,6 @@ background-color: var(--color-base-100);
 .btn:focus-visible,
 .input:focus-visible,
 .textarea:focus-visible,
-.file-input:focus-visible,
 .select:focus-visible,
 .dropdown .dropdown-content:focus-visible {
     outline: 2px solid var(--color-primary);

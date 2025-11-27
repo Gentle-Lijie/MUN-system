@@ -155,7 +155,7 @@ onMounted(() => {
       </div>
       <div class="ml-auto flex flex-wrap gap-3 items-center">
         <FormField legend="危机状态" label="筛选目标" fieldsetClass="w-40">
-          <select v-model="filterStatus" class="select select-bordered select-sm w-full">
+          <select v-model="filterStatus" class="select select-bordered w-full">
             <option value="all">全部状态</option>
             <option value="draft">草稿</option>
             <option value="active">进行中</option>
@@ -229,19 +229,19 @@ onMounted(() => {
             新建
           </button>
         </div>
-        <FormField legend="危机标题" label="请输入标题" fieldsetClass="w-full">
+        <FormField legend="危机标题" fieldsetClass="">
           <input
             v-model="form.title"
             type="text"
-            class="input input-bordered"
+            class="input input-bordered w-full"
             placeholder="危机标题"
             required
           />
         </FormField>
-        <FormField legend="危机详情" label="描述背景、任务与时限" fieldsetClass="w-full">
+        <FormField legend="危机详情" fieldsetClass="w-full">
           <textarea
             v-model="form.content"
-            class="textarea textarea-bordered"
+            class="textarea textarea-bordered w-full"
             rows="5"
             placeholder="描述背景、任务目标、时间线"
             required
@@ -249,28 +249,31 @@ onMounted(() => {
         </FormField>
         <FormField
           legend="面向委员会"
-          label="支持多选"
           fieldsetClass="w-full"
-          description="不选择则默认推送至全部委员会"
+          description="支持多选，不选择则默认推送至全部委员会"
         >
-          <select v-model="form.targetCommittees" class="select select-bordered h-32" multiple>
+          <select
+            v-model="form.targetCommittees"
+            class="select select-bordered h-32 w-full"
+            multiple
+          >
             <option v-for="venue in venues" :key="venue.id" :value="venue.id">
               {{ venue.name }} ({{ venue.code }})
             </option>
           </select>
         </FormField>
-        <FormField legend="危机状态" label="设置当前状态" fieldsetClass="w-full">
+        <!-- <FormField legend="危机状态" label="设置当前状态" fieldsetClass="w-full">
           <select v-model="form.status" class="select select-bordered">
             <option value="draft">草稿</option>
             <option value="active">进行中</option>
             <option value="resolved">已结案</option>
             <option value="archived">已归档</option>
           </select>
-        </FormField>
-        <FormField legend="附件（可选）" label="上传危机附件" fieldsetClass="w-full">
+        </FormField> -->
+        <FormField legend="附件（可选）" fieldsetClass="w-full">
           <input
             type="file"
-            class="file-input file-input-bordered w-full"
+            class="file-input file-input-primary w-full"
             @change="handleFileChange"
           />
         </FormField>

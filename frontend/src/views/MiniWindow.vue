@@ -588,7 +588,7 @@ const sendMessage = async () => {
 
         <div v-if="activeTab === 'files'" class="flex flex-col gap-6">
           <h2 class="text-xl font-semibold text-center">上传文件给主席团</h2>
-          <FormField legend="文件标题" label="请输入文件标题" fieldsetClass="fieldset-primary">
+          <FormField legend="文件标题" fieldsetClass="fieldset-primary">
             <input
               v-model="fileForm.title"
               type="text"
@@ -597,7 +597,7 @@ const sendMessage = async () => {
               required
             />
           </FormField>
-          <FormField legend="文件类型" label="请选择文件类型" fieldsetClass="fieldset-primary">
+          <FormField legend="文件类型" fieldsetClass="fieldset-primary">
             <select v-model="fileForm.type" class="select select-bordered w-full">
               <option value="position_paper">立场文件</option>
               <option value="working_paper">工作文件</option>
@@ -606,12 +606,7 @@ const sendMessage = async () => {
               <option value="other">其他</option>
             </select>
           </FormField>
-          <FormField
-            legend="选择文件"
-            label="上传要提交的附件"
-            fieldsetClass="fieldset-primary"
-            description="支持多种格式"
-          >
+          <FormField legend="选择文件" fieldsetClass="fieldset-primary">
             <input
               type="file"
               class="file-input file-input-primary file-input-bordered w-full"
@@ -619,12 +614,7 @@ const sendMessage = async () => {
               @change="handleFileChange"
             />
           </FormField>
-          <FormField
-            legend="备注/致辞"
-            label="可附上背景说明"
-            fieldsetClass="fieldset-primary"
-            description="选填"
-          >
+          <FormField legend="备注" fieldsetClass="fieldset-primary" description="选填">
             <textarea
               v-model="fileForm.description"
               class="textarea h-24 w-full"
@@ -643,13 +633,13 @@ const sendMessage = async () => {
 
         <div v-else-if="activeTab === 'messages'" class="flex flex-col gap-6">
           <h2 class="text-xl font-semibold text-center">发送即时消息</h2>
-          <FormField legend="目标频道" label="选择消息接收方" fieldsetClass="fieldset-primary">
+          <FormField legend="目标频道" fieldsetClass="fieldset-primary">
             <select v-model="messageForm.target" class="select select-bordered w-full">
               <option v-if="userProfile?.role !== 'delegate'" value="everyone">全体代表</option>
               <option value="dias">主席团</option>
             </select>
           </FormField>
-          <FormField legend="消息内容" label="输入广播内容" fieldsetClass="fieldset-primary">
+          <FormField legend="消息内容" fieldsetClass="fieldset-primary">
             <textarea
               v-model="messageForm.content"
               class="textarea textarea-bordered w-full"

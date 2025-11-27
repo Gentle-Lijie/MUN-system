@@ -513,7 +513,7 @@ onMounted(() => {
               </p>
             </div>
             <div class="flex flex-wrap gap-2 items-center">
-              <FormField legend="代表搜索" label="按姓名/国家/邮箱" fieldsetClass="w-60 shrink-0">
+              <FormField legend="代表搜索" fieldsetClass="w-60 shrink-0">
                 <div class="input input-bordered flex items-center gap-2 w-full">
                   <svg
                     xmlns="http://www.w3.org/2000/svg"
@@ -529,7 +529,7 @@ onMounted(() => {
                     v-model="delegateKeyword"
                     type="text"
                     class="grow"
-                    placeholder="搜索代表/国家"
+                    placeholder="搜索代表/国家/邮箱"
                   />
                 </div>
               </FormField>

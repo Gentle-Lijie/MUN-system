@@ -213,7 +213,7 @@ class FilesController extends Controller
 
     public function getPublished(Request $request): JsonResponse
     {
-        AuthSupport::user($this->app, $request, true);
+        $user = AuthSupport::user($this->app, $request, true);
 
         $query = Files::with(['submitter', 'committee']);
         $status = $request->query->get('status');
@@ -234,6 +234,30 @@ class FilesController extends Controller
                 $builder
                     ->whereRaw('LOWER(title) LIKE ?', [$needle])
                     ->orWhereRaw('LOWER(description) LIKE ?', [$needle]);
+            });
+        }
+
+        // 可见性控制：管理员可以看到所有文件，其他用户根据visibility过滤
+        if ($user->role !== 'admin') {
+            // 获取用户所属的委员会ID列表
+            $userCommitteeIds = $user->delegates()->pluck('committee_id')->toArray();
+
+            $query->where(function (Builder $q) use ($user, $userCommitteeIds) {
+                // 公开文件：所有登录用户可见
+                $q->where('visibility', 'public')
+                // 委员会所有成员文件：用户必须属于该委员会
+                  ->orWhere(function (Builder $subQ) use ($userCommitteeIds) {
+                      $subQ->where('visibility', 'all_committees')
+                           ->whereIn('committee_id', $userCommitteeIds);
+                  })
+                // 仅主席团文件：用户必须是主席团且属于该委员会
+                  ->orWhere(function (Builder $subQ) use ($user, $userCommitteeIds) {
+                      $subQ->where('visibility', 'committee_only')
+                           ->whereIn('committee_id', $userCommitteeIds)
+                           ->where(function (Builder $roleQ) use ($user) {
+                               return $user->role === 'dais' ? $roleQ->whereRaw('1 = 1') : $roleQ->whereRaw('1 = 0');
+                           });
+                  });
             });
         }
 
@@ -333,13 +357,37 @@ class FilesController extends Controller
 
     public function getReference(Request $request): JsonResponse
     {
-        AuthSupport::user($this->app, $request, true);
+        $user = AuthSupport::user($this->app, $request, true);
 
-        $files = Files::where('status', 'published')
+        $query = Files::where('status', 'published')
             ->select('id', 'title', 'type', 'committee_id')
-            ->with('committee:id,name,code')
-            ->orderBy('title')
-            ->get();
+            ->with('committee:id,name,code');
+
+        // 可见性控制：管理员可以看到所有文件，其他用户根据visibility过滤
+        if ($user->role !== 'admin') {
+            // 获取用户所属的委员会ID列表
+            $userCommitteeIds = $user->delegates()->pluck('committee_id')->toArray();
+
+            $query->where(function (Builder $q) use ($user, $userCommitteeIds) {
+                // 公开文件：所有登录用户可见
+                $q->where('visibility', 'public')
+                // 委员会所有成员文件：用户必须属于该委员会
+                  ->orWhere(function (Builder $subQ) use ($userCommitteeIds) {
+                      $subQ->where('visibility', 'all_committees')
+                           ->whereIn('committee_id', $userCommitteeIds);
+                  })
+                // 仅主席团文件：用户必须是主席团且属于该委员会
+                  ->orWhere(function (Builder $subQ) use ($user, $userCommitteeIds) {
+                      $subQ->where('visibility', 'committee_only')
+                           ->whereIn('committee_id', $userCommitteeIds)
+                           ->where(function (Builder $roleQ) use ($user) {
+                               return $user->role === 'dais' ? $roleQ->whereRaw('1 = 1') : $roleQ->whereRaw('1 = 0');
+                           });
+                  });
+            });
+        }
+
+        $files = $query->orderBy('title')->get();
 
         return $this->json([
             'items' => $files->map(fn (Files $file) => [

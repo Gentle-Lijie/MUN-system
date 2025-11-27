@@ -232,6 +232,12 @@ const loadDelegates = async () => {
   }
 }
 
+// 处理点名按钮点击
+const handleRollCallClick = () => {
+  showRollCallModal.value = true
+  loadDelegates()
+}
+
 // 开始会议
 const startSession = async () => {
   try {
@@ -733,13 +739,7 @@ onUnmounted(() => {
         <div class="text-center text-3xl font-semibold">{{ currentDisplayTime }}</div>
         <div class="stats stats-horizontal gap-2 text-right">
           <div class="stat place-items-center">
-            <button
-              class="btn btn-sm btn-ghost"
-              @click="
-  showRollCallModal = true;
-                loadDelegates()
-              "
-            >
+            <button class="btn btn-sm btn-ghost" @click="handleRollCallClick">
               <svg
                 xmlns="http://www.w3.org/2000/svg"
                 fill="none"

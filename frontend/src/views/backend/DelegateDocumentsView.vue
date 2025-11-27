@@ -28,6 +28,15 @@ const editForm = reactive({
   status: 'draft',
 })
 
+// 文件类型映射
+const typeLabels: Record<string, string> = {
+  position_paper: '立场文件',
+  working_paper: '工作文件',
+  draft_resolution: '决议草案',
+  press_release: '新闻稿',
+  other: '其他',
+}
+
 const fetchDocuments = async () => {
   loading.value = true
   try {
@@ -273,10 +282,10 @@ onMounted(() => {
           <table class="table table-sm">
             <thead>
               <tr>
-                <th>标题</th>
-                <th>类型</th>
-                <th>状态</th>
-                <th>操作</th>
+                <th class="text-center">标题</th>
+                <th class="text-center">类型</th>
+                <th class="text-center">状态</th>
+                <th class="text-center">操作</th>
               </tr>
             </thead>
             <tbody>
@@ -301,7 +310,7 @@ onMounted(() => {
                   </div>
                 </td>
                 <td>
-                  <span class="badge badge-outline">{{ doc.type }}</span>
+                  <span class="badge badge-outline">{{ typeLabels[doc.type] || doc.type }}</span>
                 </td>
                 <td>
                   <span

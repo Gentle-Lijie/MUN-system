@@ -231,21 +231,17 @@ onMounted(() => {
 
     <section class="rounded-2xl border border-base-200 bg-base-100 p-4 space-y-4">
       <div class="grid gap-3 md:grid-cols-4">
-        <FormField legend="消息类型" label="筛选目标">
-          <select
-            v-model="filters.target"
-            class="select select-bordered select-sm"
-            @change="applyFilters"
-          >
+        <FormField legend="消息类型">
+          <select v-model="filters.target" class="select select-bordered" @change="applyFilters">
             <option v-for="option in targetFilterOptions" :key="option.value" :value="option.value">
               {{ option.label }}
             </option>
           </select>
         </FormField>
-        <FormField legend="所属会场" label="限定可选会场">
+        <FormField legend="所属会场">
           <select
             v-model.number="filters.committeeId"
-            class="select select-bordered select-sm"
+            class="select select-bordered"
             @change="applyFilters"
           >
             <option :value="0">全部会场</option>
@@ -258,16 +254,16 @@ onMounted(() => {
             </option>
           </select>
         </FormField>
-        <FormField legend="关键词" label="输入内容关键词" fieldsetClass="md:col-span-2">
+        <FormField legend="关键词" fieldsetClass="md:col-span-2">
           <div class="join w-full">
             <input
               v-model="filters.search"
               type="text"
-              class="input input-bordered join-item input-sm"
+              class="input input-bordered join-item"
               placeholder="输入内容关键词"
               @keyup.enter="applyFilters"
             />
-            <button class="btn btn-outline join-item btn-sm" @click="applyFilters">搜索</button>
+            <button class="btn btn-outline ml-2" @click="applyFilters">搜索</button>
           </div>
         </FormField>
       </div>
@@ -314,13 +310,9 @@ onMounted(() => {
 
       <div class="flex items-center justify-between text-sm text-base-content/70">
         <span>共 {{ pagination.total }} 条 · 第 {{ pagination.page }} / {{ totalPages }} 页</span>
-        <div class="join">
-          <button class="btn btn-sm join-item" :disabled="!canPrev" @click="changePage(-1)">
-            上一页
-          </button>
-          <button class="btn btn-sm join-item" :disabled="!canNext" @click="changePage(1)">
-            下一页
-          </button>
+        <div class="grid grid-cols-2 gap-1">
+          <button class="btn btn-sm" :disabled="!canPrev" @click="changePage(-1)">上一页</button>
+          <button class="btn btn-sm" :disabled="!canNext" @click="changePage(1)">下一页</button>
         </div>
       </div>
     </section>

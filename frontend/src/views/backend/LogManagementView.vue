@@ -211,21 +211,9 @@ onMounted(() => {
 
       <div class="flex items-center justify-between text-sm text-base-content/70">
         <p>共 {{ total }} 条记录，当前第 {{ page }} / {{ totalPages }} 页</p>
-        <div class="join">
-          <button
-            class="btn btn-sm join-item"
-            :disabled="page === 1 || loading"
-            @click="handlePrevPage"
-          >
-            上一页
-          </button>
-          <button
-            class="btn btn-sm join-item"
-            :disabled="page >= totalPages || loading"
-            @click="handleNextPage"
-          >
-            下一页
-          </button>
+        <div class="grid grid-cols-2 gap-1">
+          <button class="btn btn-sm join-item" @click="handlePrevPage">上一页</button>
+          <button class="btn btn-sm join-item" @click="handleNextPage">下一页</button>
         </div>
       </div>
 
