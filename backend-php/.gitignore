@@ -1,4 +1,4 @@
 /vendor
-/.env
+# /.env
 /storage/logs/*.log
 /.phpunit.result.cache

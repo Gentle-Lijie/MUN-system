@@ -8,7 +8,7 @@ RUN docker-php-ext-install pdo pdo_mysql
 WORKDIR /var/www/html
 COPY --from=vendor /app/vendor /var/www/html/vendor
 COPY . /var/www/html
-RUN php database/migrate.php
+# RUN php database/migrate.php
 COPY docker/vhost.conf /etc/apache2/sites-available/000-default.conf
 RUN a2enmod rewrite \
     && mkdir -p /var/www/html/attachments /var/www/html/storage /var/www/html/bootstrap \
