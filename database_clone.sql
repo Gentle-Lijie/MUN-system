@@ -196,6 +196,7 @@ CREATE TABLE `Motions` (
   `committee_session_id` int DEFAULT NULL,
   `motion_type` enum('open_main_list','moderate_caucus','unmoderated_caucus','unmoderated_debate','right_of_query','begin_special_state','end_special_state','adjourn_meeting','document_reading','personal_speech','vote','right_of_reply') COLLATE utf8mb4_unicode_ci NOT NULL,
   `proposer_id` int DEFAULT NULL,
+`description` text,
   `file_id` int DEFAULT NULL,
   `unit_time_seconds` int DEFAULT NULL,
   `total_time_seconds` int DEFAULT NULL,

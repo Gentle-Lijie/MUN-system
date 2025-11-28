@@ -48,9 +48,7 @@ return static function (Router $router): void {
     $router->post('/api/display/roll-call', [DisplayController::class, 'rollCall']);
     $router->post('/api/display/start-session', [DisplayController::class, 'startSession']);
     $router->post('/api/display/switch-speaker-list', [DisplayController::class, 'switchSpeakerList']);
-    $router->post('/api/display/timer/start', [DisplayController::class, 'startTimer']);
-    $router->post('/api/display/timer/stop', [DisplayController::class, 'stopTimer']);
-    $router->post('/api/display/speaker/next', [DisplayController::class, 'nextSpeaker']);
+    $router->post('/api/display/set-status', [DisplayController::class, 'setStatus']);
 
     $router->post('/api/motions', [MotionController::class, 'create']);
     $router->post('/api/motions/{motionId:\d+}/{listId:\d+}', [MotionController::class, 'updateSpeakerList']);

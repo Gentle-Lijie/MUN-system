@@ -1,21 +1,22 @@
 <template>
   <dialog v-if="modelValue" class="modal" open>
-    <div class="modal-box w-11/12 max-w-5xl bg-transparent p-0 h-[80vh]">
-      <div class="flex flex-col gap-4 rounded-3xl bg-base-100 p-6 lg:p-10 h-full">
+    <div class="modal-box w-11/12 max-w-5xl bg-transparent p-0 h-[90vh] overflow-y-auto">
+      <div class="flex flex-col gap-4 rounded-3xl bg-base-100 p-6 lg:p-10 h-full min-h-0">
         <div class="flex flex-col gap-2 border-b border-base-200 pb-6">
           <p class="text-base-content/60 text-base">文件投票</p>
           <h3 class="text-3xl font-bold">依次收集代表投票</h3>
           <p class="text-sm text-base-content/70">{{ progressText }}</p>
         </div>
 
-        <div class="grid gap-6 lg:grid-cols-[1fr_300px] h-[60vh] min-h-[400px]">
+        <div class="grid gap-6 lg:grid-cols-[1fr_300px] flex-1 min-h-0">
           <!-- 左侧代表列表 -->
-          <section class="flex flex-col gap-4 rounded-3xl border border-base-200 bg-base-200/40 p-4 lg:p-6">
+          <section
+            class="flex h-full flex-col gap-4 rounded-3xl border border-base-200 bg-base-200/40 p-4 lg:p-6 overflow-hidden">
             <header class="flex items-center justify-between">
               <h4 class="text-xl font-semibold">代表列表</h4>
               <span class="badge badge-neutral badge-lg">共 {{ delegates.length }} 人</span>
             </header>
-            <div class="space-y-2 overflow-y-auto pr-1 max-h-full">
+            <div class="flex-1 space-y-2 overflow-y-auto pr-1">
               <div
                 v-for="(delegate, index) in delegates"
                 :key="delegate.id"
@@ -54,13 +55,14 @@
           </section>
 
           <!-- 右侧投票按钮 -->
-          <section class="flex flex-col gap-6 rounded-3xl border border-base-200 bg-base-200/40 p-4 lg:p-6">
+          <section
+            class="flex h-full flex-col gap-6 rounded-3xl border border-base-200 bg-base-200/40 p-4 lg:p-6 overflow-hidden">
             <header class="text-center">
               <h4 class="text-2xl font-semibold mb-2">{{ currentDelegate?.country }}</h4>
               <p class="text-base-content/70">{{ currentDelegate?.userName }}</p>
             </header>
 
-            <div class="flex flex-col gap-4 flex-1 justify-center">
+            <div class="flex flex-col gap-4 flex-1 justify-center overflow-y-auto">
               <button
                 type="button"
                 class="btn btn-success btn-lg text-lg"
@@ -121,7 +123,7 @@
           </section>
         </div>
 
-        <div class="flex gap-4 justify-end">
+        <div class="flex gap-4 justify-end pt-4 border-t border-base-200 mt-4">
           <button type="button" class="btn btn-ghost" @click="handleCancel">
             取消投票
           </button>

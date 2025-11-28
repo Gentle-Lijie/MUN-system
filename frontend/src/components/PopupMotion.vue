@@ -1,6 +1,6 @@
 <template>
   <dialog v-if="modelValue" class="modal" open>
-    <div class="modal-box w-11/12 max-w-6xl bg-transparent p-0 h-[90vh]">
+    <div class="modal-box w-11/12 max-w-6xl bg-transparent p-0 h-[90vh] overflow-y-auto">
       <div class="flex flex-col gap-4 rounded-3xl bg-base-100 p-6 lg:p-10 h-full">
         <div class="flex flex-col gap-2 border-b border-base-200 pb-6">
           <p class="text-base-content/60 text-base">动议控制面板</p>
@@ -168,6 +168,38 @@
       @confirm="handleVoteResultConfirm"
       @retry="handleVoteResultRetry"
     />
+
+    <!-- 计时窗口 -->
+    <dialog v-if="showTimer" class="modal" open>
+      <div class="modal-box">
+        <h3 class="font-bold text-lg mb-4">{{ activeMotion?.title }} 计时</h3>
+        <div class="text-center">
+          <div class="text-6xl font-bold mb-4">
+            {{ formatTimer(timerRemainingSeconds) }}
+          </div>
+          <div class="text-sm text-base-content/70 mb-6">
+            总时长：{{ formatTimer(timerTotalSeconds) }}
+          </div>
+          <div class="flex gap-4 justify-center">
+            <button class="btn btn-primary" :disabled="timerRunning" @click="startTimer">
+              开始
+            </button>
+            <button class="btn btn-secondary" :disabled="!timerRunning" @click="pauseTimer">
+              暂停
+            </button>
+            <button class="btn btn-accent" @click="stopTimer">
+              停止
+            </button>
+          </div>
+        </div>
+        <div class="modal-action">
+          <button class="btn btn-success" @click="confirmTimer">确认完成</button>
+        </div>
+      </div>
+      <form method="dialog" class="modal-backdrop">
+        <button @click.prevent="() => { showTimer = false; stopTimer() }">关闭</button>
+      </form>
+    </dialog>
   </dialog>
 </template>
 
@@ -212,6 +244,7 @@ export type VoteResultPayload = {
     effectiveTotal: number
     ratio: number
     requiredVotes: number
+    requiredRatio: number
     passed: boolean
   }
   votes: VotingRecord[]
@@ -334,6 +367,11 @@ const selectedMajority = ref<MajorityOption | null>(null)
 const voteResultPayload = ref<VoteResultPayload | null>(null)
 const rollCallStats = ref<{ total: number; present: number } | null>(null)
 const rollCallAttendance = ref<Record<number, AttendanceStatus>>({})
+const showTimer = ref(false)
+const timerTotalSeconds = ref(0)
+const timerRemainingSeconds = ref(0)
+const timerRunning = ref(false)
+let timerInterval: number | null = null
 
 const activeMotion = computed(() => motions.find((motion) => motion.id === selectedMotionId.value))
 const isVotingMotion = computed(() => activeMotion.value?.id === 'voting-doc')
@@ -421,6 +459,15 @@ const handlePass = async () => {
     startVotingWorkflow()
     return
   }
+
+  // 对于不需要speakerList的动议，弹出计时窗口
+  if (['unmoderated_caucus', 'free_debate', 'reading', 'personal_speech', 'right_of_reply'].includes(activeMotion.value.id)) {
+    timerTotalSeconds.value = formState.totalTime || 0
+    timerRemainingSeconds.value = timerTotalSeconds.value
+    showTimer.value = true
+    return
+  }
+
   emit('pass', {
     motion: activeMotion.value,
     form: { ...formState },
@@ -522,13 +569,19 @@ const handleMajorityCancel = () => {
 
 const handleVotingComplete = (result: VotingSummary) => {
   if (!selectedMajority.value || !rollCallStats.value) return
+  const effectiveTotal = result.summary.effectiveTotal
+  const ratio = effectiveTotal > 0 ? result.summary.yes / effectiveTotal : 0
+  const requiredRatio = selectedMajority.value.ratio
+  const requiredVotes = Math.ceil(requiredRatio * rollCallStats.value.present)
   voteResultPayload.value = {
     majority: selectedMajority.value,
     rollCall: rollCallStats.value,
     summary: {
       ...result.summary,
-      requiredVotes: selectedMajority.value.requiredVotes,
-      passed: result.summary.yes >= selectedMajority.value.requiredVotes
+      requiredVotes,
+      requiredRatio,
+      ratio,
+      passed: ratio >= requiredRatio
     },
     votes: result.votes
   }
@@ -542,6 +595,19 @@ const handleVotingCancel = () => {
 
 const handleVoteResultConfirm = () => {
   if (!activeMotion.value || !voteResultPayload.value) return
+
+  const summary = voteResultPayload.value.summary
+  const effectiveTotal = summary.effectiveTotal
+  const ratio = effectiveTotal > 0 ? summary.yes / effectiveTotal : 0
+  const requiredRatio = voteResultPayload.value.majority.ratio
+  const requiredVotes = Math.ceil(requiredRatio * voteResultPayload.value.rollCall.present)
+  const passed = ratio >= requiredRatio
+
+  voteResultPayload.value.summary.passed = passed
+  voteResultPayload.value.summary.ratio = ratio
+  voteResultPayload.value.summary.requiredRatio = requiredRatio
+  voteResultPayload.value.summary.requiredVotes = requiredVotes
+
   emit('pass', {
     motion: activeMotion.value,
     form: { ...formState },
@@ -567,6 +633,52 @@ const resetVotingFlow = () => {
   voteResultPayload.value = null
   rollCallStats.value = null
   rollCallAttendance.value = {}
+}
+
+const formatTimer = (seconds: number): string => {
+  const mins = Math.floor(seconds / 60)
+  const secs = seconds % 60
+  return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`
+}
+
+const startTimer = () => {
+  if (timerRunning.value) return
+  timerRunning.value = true
+  timerInterval = setInterval(() => {
+    if (timerRemainingSeconds.value > 0) {
+      timerRemainingSeconds.value--
+    } else {
+      stopTimer()
+    }
+  }, 1000)
+}
+
+const pauseTimer = () => {
+  timerRunning.value = false
+  if (timerInterval) {
+    clearInterval(timerInterval)
+    timerInterval = null
+  }
+}
+
+const stopTimer = () => {
+  timerRunning.value = false
+  if (timerInterval) {
+    clearInterval(timerInterval)
+    timerInterval = null
+  }
+}
+
+const confirmTimer = () => {
+  if (!activeMotion.value) return
+  emit('pass', {
+    motion: activeMotion.value,
+    form: { ...formState },
+  })
+  emit('update:modelValue', false)
+  resetForm()
+  showTimer.value = false
+  stopTimer()
 }
 
 function handleClose() {

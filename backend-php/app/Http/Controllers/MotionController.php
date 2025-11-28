@@ -38,6 +38,7 @@ class MotionController extends Controller
         $state = $data['state'] ?? 'pending';
         $voteResult = $data['voteResult'] ?? null;
         $committeeId = $data['committeeId'] ?? null;
+        $description = $data['description'] ?? null;
 
         if (!$motionType) {
             return $this->json(['error' => 'motionType is required'], 400);
@@ -106,6 +107,7 @@ class MotionController extends Controller
             'veto_applicable' => $vetoApplicable,
             'state' => $state,
             'vote_result' => $voteResult,
+            'description' => $description,
         ]);
         $motion->save();
 

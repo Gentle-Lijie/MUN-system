@@ -4,7 +4,7 @@ require 'vendor/autoload.php';
 
 try {
     $pdo = new PDO(
-        'mysql:host=106.15.139.140;port=3306;dbname=mun;charset=utf8mb4',
+        'mysql:host=localhost;port=3306;dbname=mun;charset=utf8mb4',
         'root',
         '123456'
     );

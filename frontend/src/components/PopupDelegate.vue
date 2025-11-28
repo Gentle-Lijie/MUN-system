@@ -3,18 +3,10 @@
     <div class="modal-box">
       <h3 class="font-bold text-lg mb-4">选择发言者</h3>
       <FormField legend="快速筛选" label="输入国家名或代表名">
-        <input
-          v-model="search"
-          type="text"
-          placeholder="输入国家名或代表名"
-          class="input input-bordered w-full"
-        />
+        <input v-model="search" type="text" placeholder="输入国家名或代表名" class="input input-bordered w-full"
+          @keydown.enter="handleConfirm" />
       </FormField>
-      <FormField
-        legend="选择发言者"
-        label="从代表名单中选择"
-        description="列表会根据当前会场自动过滤"
-      >
+      <FormField legend="选择发言者" label="从代表名单中选择" description="列表会根据当前会场自动过滤">
         <select v-model="selectedDelegateId" class="select select-bordered w-full">
           <option disabled selected value="">请选择发言者</option>
           <option v-for="delegate in filteredDelegates" :key="delegate.id" :value="delegate.id">
@@ -23,7 +15,8 @@
         </select>
       </FormField>
       <div class="modal-action">
-        <button class="btn btn-primary w-full" @click="handleConfirm">确认</button>
+        <button class="btn btn-primary w-80vw" @click="handleConfirm">确认添加</button>
+        <button class="btn btn-ghost w-20vw" @click="handleClose">完成</button>
       </div>
     </div>
     <form method="dialog" class="modal-backdrop">
@@ -87,23 +80,34 @@ watch(
 function handleConfirm() {
   console.log('PopupDelegate handleConfirm called', {
     selectedDelegateId: selectedDelegateId.value,
+    search: search.value,
     delegates: delegates.value,
   })
-  if (!selectedDelegateId.value) {
-    console.warn('No delegate selected')
-    alert('请先选择一个代表')
-    return
+
+  let delegate = null
+
+  // 如果有选中的代表
+  if (selectedDelegateId.value) {
+    delegate = delegates.value.find((d) => String(d.id) === String(selectedDelegateId.value))
   }
-  const delegate = delegates.value.find((d) => String(d.id) === String(selectedDelegateId.value))
-  console.log('Found delegate:', delegate)
+  // 如果没有选中，但搜索框有内容，尝试严格匹配国家名
+  else if (search.value.trim()) {
+    delegate = delegates.value.find((d) => d.country === search.value.trim())
+  }
+
   if (!delegate) {
-    console.error('Delegate not found in list')
-    alert('未找到选中的代表')
+    const message = selectedDelegateId.value ? '未找到选中的代表' : '未找到匹配国家的代表，请检查输入的国家名'
+    console.error(message)
+    alert(message)
     return
   }
-  console.log('Emitting confirm event with delegate:', delegate)
+
+  console.log('Found delegate:', delegate)
   emit('confirm', delegate)
-  emit('update:modelValue', false)
+
+  // 支持连续添加：重置选择，但不关闭弹窗
+  selectedDelegateId.value = ''
+  search.value = ''
 }
 function handleClose() {
   emit('update:modelValue', false)

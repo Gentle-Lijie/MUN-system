@@ -1,13 +1,14 @@
 <template>
   <dialog v-if="modelValue && result" class="modal" open>
-    <div class="modal-box w-11/12 max-w-4xl bg-transparent p-0">
+    <div class="modal-box w-11/12 max-w-4xl bg-transparent p-0 h-[80vh] overflow-y-auto">
       <div class="flex flex-col gap-4 rounded-3xl bg-base-100 p-6 lg:p-10">
         <div class="flex items-center justify-between border-b border-base-200 pb-4">
           <div>
             <p class="text-base-content/60 text-sm">投票结果</p>
             <h3 class="text-2xl font-bold">{{ result.summary.passed ? '动议通过' : '动议未通过' }}</h3>
             <p class="text-sm text-base-content/70">
-              多数方案：{{ result.majority.label }}（至少 {{ result.summary.requiredVotes }} 票）
+              多数方案：{{ result.majority.label }}（需 ≥
+              {{ (result.summary.requiredRatio * 100).toFixed(1) }}% 有效票，约 {{ result.summary.requiredVotes }} 票）
             </p>
           </div>
           <div class="text-right">

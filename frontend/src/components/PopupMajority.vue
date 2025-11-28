@@ -1,6 +1,6 @@
 <template>
   <dialog v-if="modelValue" class="modal" open>
-    <div class="modal-box w-11/12 max-w-4xl bg-transparent p-0">
+    <div class="modal-box w-11/12 max-w-4xl bg-transparent p-0 h-[80vh] overflow-y-auto">
       <div class="flex flex-col gap-4 rounded-3xl bg-base-100 p-6 lg:p-10">
         <div class="flex items-center justify-between border-b border-base-200 pb-4">
           <div>

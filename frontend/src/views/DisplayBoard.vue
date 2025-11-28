@@ -60,6 +60,28 @@ const activeMotionMeta = ref<{
 const caucusStorageKey = 'mun-caucus-remaining'
 const caucusRemainingState = ref<Record<string, number>>({})
 let timerInterval: number | null = null
+// 响铃音频资源
+const bellAudio = new Audio('/bell.mp3')
+const playBell = (count = 1) => {
+  if (count === 1) {
+    bellAudio.currentTime = 0
+    bellAudio.play()
+  } else if (count === 2) {
+    bellAudio.currentTime = 0
+    bellAudio.play()
+    bellAudio.currentTime = 0
+    bellAudio.play()
+  }
+}
+
+// 自由计时弹窗状态
+const showFreeTimerModal = ref(false)
+const freeTimerRunning = ref(false)
+const freeTimerTotalSeconds = ref(600)
+const freeTimerRemainingSeconds = ref(600)
+const freeTimerInputMinutes = ref(10)
+const freeTimerInputSeconds = ref(0)
+let freeTimerInterval: number | null = null
 
 // 时间显示状态
 const currentDisplayTime = ref('00:00')
@@ -89,6 +111,12 @@ const summarizeVoteResult = (payload?: VoteResultPayload | null): HistoryVoteRes
     no: summary.no ?? 0,
     abstain: summary.abstain ?? 0,
   }
+}
+
+const formatTimer = (seconds: number): string => {
+  const mins = Math.floor(seconds / 60)
+  const secs = seconds % 60
+  return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`
 }
 
 const isModeratedCaucus = computed(() => activeMotionMeta.value?.motionType === 'moderate_caucus')
@@ -436,6 +464,7 @@ const handleMotionPass = async ({ motion, form, voteResult }: MotionSubmission) 
       unitTimeSeconds: form.unitTime || null,
       totalTimeSeconds: form.totalTime || null,
       state: motionState,
+      description: form.notes || null,
     }
 
     if (voteResult) {
@@ -482,10 +511,9 @@ const handleMotionPass = async ({ motion, form, voteResult }: MotionSubmission) 
       voteResult: summarizedVote,
     })
 
-    // 如果需要发起点名
-    if ((form as any).triggerRollCall) {
-      await loadDelegates()
-      showRollCallModal.value = true
+    // 如果是休会，通过后设置会议状态为paused
+    if (motion.id === 'adjourn' && motionState === 'passed') {
+      await setCommitteeStatus('paused')
     }
 
     // 刷新大屏数据
@@ -527,6 +555,7 @@ const handleMotionFail = async ({ motion, form }: MotionSubmission) => {
         unitTimeSeconds: form.unitTime || null,
         totalTimeSeconds: form.totalTime || null,
         state: 'rejected',
+        description: form.notes || null,
       }),
     })
 
@@ -559,8 +588,8 @@ const handleMotionFail = async ({ motion, form }: MotionSubmission) => {
   }
 }
 
-// 开始计时
-const startTimer = async () => {
+// 开始计时（纯前端控制）
+const startTimer = () => {
   if (!speakerListId.value) {
     alert('没有活跃的发言列表')
     return
@@ -575,81 +604,117 @@ const startTimer = async () => {
     return
   }
 
-  try {
-    const response = await apiFetch('/api/display/timer/start', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ speakerListId: speakerListId.value }),
-    })
+  const wasRunning = timerRunning.value
+  timerRunning.value = true
 
-    if (!response.ok) throw new Error('Failed to start timer')
-
-    timerRunning.value = true
+  // 如果之前没在运行，才重置计时器；如果是暂停后继续，保持当前值
+  if (!wasRunning) {
     const effectiveSpeakerSeconds =
       isModeratedCaucus.value && typeof caucusRemainingSeconds.value === 'number'
         ? Math.min(speakerTimerDefaultSeconds.value, Math.max(caucusRemainingSeconds.value, 0))
         : speakerTimerDefaultSeconds.value
     speakerTimerSeconds.value = effectiveSpeakerSeconds
+  }
 
-    if (timerInterval) clearInterval(timerInterval)
-    timerInterval = setInterval(() => {
-      let shouldStop = false
+  if (timerInterval) clearInterval(timerInterval)
+  timerInterval = setInterval(() => {
+    let shouldStop = false
 
-      if (speakerTimerSeconds.value > 0) {
-        speakerTimerSeconds.value--
-      } else {
+    if (speakerTimerSeconds.value > 0) {
+      speakerTimerSeconds.value--
+      if (speakerTimerSeconds.value === 15) {
+        playBell(1)
+      }
+      if (speakerTimerSeconds.value === 0) {
+        playBell(2)
+      }
+    } else {
+      shouldStop = true
+    }
+
+    if (isModeratedCaucus.value && typeof caucusRemainingSeconds.value === 'number') {
+      if (caucusRemainingSeconds.value > 0) {
+        caucusRemainingSeconds.value = Math.max(caucusRemainingSeconds.value - 1, 0)
+        syncCaucusRemainingForCurrentList()
+      }
+      if (caucusRemainingSeconds.value <= 0) {
         shouldStop = true
       }
+    }
 
-      if (isModeratedCaucus.value && typeof caucusRemainingSeconds.value === 'number') {
-        if (caucusRemainingSeconds.value > 0) {
-          caucusRemainingSeconds.value = Math.max(caucusRemainingSeconds.value - 1, 0)
-          syncCaucusRemainingForCurrentList()
-        }
-        if (caucusRemainingSeconds.value <= 0) {
-          shouldStop = true
-        }
-      }
+    if (shouldStop) {
+      pauseTimer()
+    }
+  }, 1000) as unknown as number
+}
 
-      if (shouldStop) {
-        stopTimer()
-      }
-    }, 1000) as unknown as number
+// 暂停计时（纯前端控制）
+const pauseTimer = () => {
+  if (!speakerListId.value || !timerRunning.value) return
 
-    await loadBoardData()
-  } catch (error) {
-    console.error('Failed to start timer:', error)
-    alert('开始计时失败')
+  timerRunning.value = false
+  if (timerInterval) {
+    clearInterval(timerInterval)
+    timerInterval = null
+  }
+
+  syncCaucusRemainingForCurrentList()
+}
+
+// 自由计时器控制
+const openFreeTimerModal = () => {
+  showFreeTimerModal.value = true
+  freeTimerInputMinutes.value = Math.floor(freeTimerTotalSeconds.value / 60)
+  freeTimerInputSeconds.value = freeTimerTotalSeconds.value % 60
+}
+
+const closeFreeTimerModal = () => {
+  showFreeTimerModal.value = false
+  pauseFreeTimer()
+}
+
+const applyFreeTimerSettings = () => {
+  const minutes = Math.max(0, Math.floor(freeTimerInputMinutes.value))
+  const seconds = Math.min(59, Math.max(0, Math.floor(freeTimerInputSeconds.value)))
+  const total = Math.max(10, minutes * 60 + seconds)
+  freeTimerTotalSeconds.value = total
+  freeTimerRemainingSeconds.value = total
+  freeTimerRunning.value = false
+  if (freeTimerInterval) {
+    clearInterval(freeTimerInterval)
+    freeTimerInterval = null
   }
 }
 
-// 停止计时
-const stopTimer = async () => {
-  if (!speakerListId.value || !timerRunning.value) return
-
-  try {
-    const response = await apiFetch('/api/display/timer/stop', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ speakerListId: speakerListId.value }),
-    })
-
-    if (!response.ok) throw new Error('Failed to stop timer')
-
-    timerRunning.value = false
-    if (timerInterval) {
-      clearInterval(timerInterval)
-      timerInterval = null
+const startFreeTimer = () => {
+  if (freeTimerRunning.value || freeTimerRemainingSeconds.value <= 0) return
+  freeTimerRunning.value = true
+  freeTimerInterval = setInterval(() => {
+    if (freeTimerRemainingSeconds.value > 0) {
+      freeTimerRemainingSeconds.value--
+      if (freeTimerRemainingSeconds.value === 15) {
+        playBell(1)
+      }
+      if (freeTimerRemainingSeconds.value === 0) {
+        playBell(2)
+      }
+    } else {
+      pauseFreeTimer()
     }
+  }, 1000) as unknown as number
+}
 
-    syncCaucusRemainingForCurrentList()
-
-    // 刷新发言队列状态
-    await loadBoardData()
-  } catch (error) {
-    console.error('Failed to stop timer:', error)
-    alert('停止计时失败')
+const pauseFreeTimer = () => {
+  freeTimerRunning.value = false
+  if (freeTimerInterval) {
+    clearInterval(freeTimerInterval)
+    freeTimerInterval = null
   }
+}
+
+const resetFreeTimer = () => {
+  freeTimerRemainingSeconds.value = freeTimerTotalSeconds.value
+  pauseFreeTimer()
 }
 
 // 下一个发言者
@@ -694,15 +759,22 @@ const nextSpeaker = async () => {
   }
 }
 
-// 格式化计时器显示
-const formatTimer = (seconds?: number | null): string => {
-  if (seconds === undefined || seconds === null || Number.isNaN(seconds)) {
-    return '00:00'
+// 设置委员会状态
+const setCommitteeStatus = async (status: string) => {
+  try {
+    const response = await apiFetch('/api/display/set-status', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ committeeId: committeeId.value, status }),
+    })
+
+    if (!response.ok) throw new Error('Failed to set committee status')
+
+    // 刷新数据
+    await loadBoardData()
+  } catch (error) {
+    console.error('Failed to set committee status:', error)
   }
-  const safeSeconds = Math.max(0, Math.floor(seconds))
-  const mins = Math.floor(safeSeconds / 60)
-  const secs = safeSeconds % 60
-  return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`
 }
 
 // 定时刷新（只在没有弹窗打开时刷新）
@@ -728,6 +800,7 @@ onMounted(() => {
 onUnmounted(() => {
   if (refreshInterval) clearInterval(refreshInterval)
   if (timerInterval) clearInterval(timerInterval)
+  if (freeTimerInterval) clearInterval(freeTimerInterval)
   stopTimeUpdate()
 })
 </script>
@@ -735,46 +808,27 @@ onUnmounted(() => {
 <template>
   <section class="h-screen overflow-hidden bg-base-200 p-8">
     <!-- 开始会议覆盖层 -->
-    <div
-      v-if="showStartSessionOverlay"
-      class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm"
-    >
+    <div v-if="showStartSessionOverlay"
+      class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
       <button class="btn btn-primary btn-lg text-4xl px-16 py-8 h-auto" @click="startSession">
         开始会议
       </button>
     </div>
 
-    <PopupRollCall
-      v-model="showRollCallModal"
-      :delegates="delegates"
-      :initial-attendance="rollCallAttendance"
-      title="点名"
-      @confirm="handleRollCallConfirm"
-      @cancel="handleRollCallCancel"
-    />
+    <PopupRollCall v-model="showRollCallModal" :delegates="delegates" :initial-attendance="rollCallAttendance"
+      title="点名" @confirm="handleRollCallConfirm" @cancel="handleRollCallCancel" />
 
     <div class="flex h-full min-h-0 flex-col gap-4 w-full">
-      <header
-        class="flex items-center justify-between rounded-3xl bg-base-100 px-8 py-3 shadow-xl w-full"
-      >
+      <header class="flex items-center justify-between rounded-3xl bg-base-100 px-8 py-3 shadow-xl w-full">
         <h1 class="text-4xl font-bold">当前会场：{{ committee?.name || '加载中...' }}</h1>
         <div class="text-center text-3xl font-semibold">{{ currentDisplayTime }}</div>
         <div class="stats stats-horizontal gap-2 text-right">
           <div class="stat place-items-center">
             <button class="btn btn-sm btn-ghost" @click="handleRollCallClick">
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke-width="1.5"
-                stroke="currentColor"
-                class="w-5 h-5"
-              >
-                <path
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0115.75 21H5.25A2.25 2.25 0 013 18.75V8.25A2.25 2.25 0 015.25 6H10"
-                />
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
+                stroke="currentColor" class="w-5 h-5">
+                <path stroke-linecap="round" stroke-linejoin="round"
+                  d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0115.75 21H5.25A2.25 2.25 0 013 18.75V8.25A2.25 2.25 0 015.25 6H10" />
               </svg>
               修改出席情况
             </button>
@@ -816,30 +870,25 @@ onUnmounted(() => {
               单位时长：{{ formatTimer(speakerTimerDefaultSeconds) }}
             </div>
             <div v-if="showCaucusTimer" class="text-sm text-secondary">
-              总剩余：{{ formatTimer(caucusRemainingSeconds) }} /
-              {{ formatTimer(caucusTotalSeconds) }}
+              总剩余：{{ formatTimer(caucusRemainingSeconds || 0) }} /
+              {{ formatTimer(caucusTotalSeconds || 0) }}
             </div>
           </div>
           <div class="px-8 pb-6">
             <div class="grid grid-cols-3 gap-3">
-              <button
-                class="btn btn-primary w-full text-1.5xl"
-                :disabled="timerRunning"
-                @click="startTimer"
-              >
-                > 开始计时
+              <button class="btn btn-primary w-full text-1.5xl" :disabled="timerRunning" @click="startTimer">
+                开始计时
               </button>
-              <button
-                class="btn btn-secondary w-full text-1.5xl"
-                :disabled="!timerRunning"
-                @click="stopTimer"
-              >
-                > 停止计时
+              <button class="btn btn-secondary w-full text-1.5xl" :disabled="!timerRunning" @click="pauseTimer">
+                暂停计时
               </button>
               <button class="btn btn-accent w-full text-1.5xl" @click="nextSpeaker">
                 下一个发言者
               </button>
             </div>
+            <button class="btn btn-outline w-full mt-4" @click="openFreeTimerModal">
+              自由计时器
+            </button>
           </div>
           <div class="flex-1 min-h-0 overflow-y-auto px-8 pb-6">
             <div class="flex items-center justify-between mb-4">
@@ -848,48 +897,20 @@ onUnmounted(() => {
                 <span v-if="speakerListTotalCount > 0" class="text-sm text-base-content/70 mr-2">
                   {{ speakerListCurrentIndex }} / {{ speakerListTotalCount }}
                 </span>
-                <button
-                  class="btn btn-sm btn-circle btn-ghost"
-                  title="上一个发言列表"
-                  :disabled="speakerListTotalCount <= 1"
-                  @click="switchSpeakerList('prev')"
-                >
-                  >
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke-width="2"
-                    stroke="currentColor"
-                    class="w-5 h-5"
-                  >
-                    <path
-                      stroke-linecap="round"
-                      stroke-linejoin="round"
-                      d="M15.75 19.5L8.25 12l7.5-7.5"
-                    />
+                <button class="btn btn-sm btn-circle btn-ghost" title="上一个发言列表" :disabled="speakerListTotalCount <= 1"
+                  @click="switchSpeakerList('prev')">
+
+                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2"
+                    stroke="currentColor" class="w-5 h-5">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5" />
                   </svg>
                 </button>
-                <button
-                  class="btn btn-sm btn-circle btn-ghost"
-                  title="下一个发言列表"
-                  :disabled="speakerListTotalCount <= 1"
-                  @click="switchSpeakerList('next')"
-                >
-                  >
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke-width="2"
-                    stroke="currentColor"
-                    class="w-5 h-5"
-                  >
-                    <path
-                      stroke-linecap="round"
-                      stroke-linejoin="round"
-                      d="M8.25 4.5l7.5 7.5-7.5 7.5"
-                    />
+                <button class="btn btn-sm btn-circle btn-ghost" title="下一个发言列表" :disabled="speakerListTotalCount <= 1"
+                  @click="switchSpeakerList('next')">
+
+                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2"
+                    stroke="currentColor" class="w-5 h-5">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
                   </svg>
                 </button>
               </div>
@@ -898,12 +919,9 @@ onUnmounted(() => {
               暂无发言者
             </div>
             <div v-else class="space-y-4">
-              <article
-                v-for="item in speakerQueue"
-                :key="item.id"
+              <article v-for="item in speakerQueue" :key="item.id"
                 class="rounded-2xl border border-base-300 bg-base-200/40 px-4 py-3"
-                :class="item.status === 'speaking' ? 'border-primary bg-primary/10' : ''"
-              >
+                :class="item.status === 'speaking' ? 'border-primary bg-primary/10' : ''">
                 <div class="flex items-center justify-between">
                   <div>
                     <p class="text-3xl font-semibold">{{ item.country }}</p>
@@ -920,11 +938,7 @@ onUnmounted(() => {
             <button class="btn btn-primary w-full text-1.5xl" @click="showPopupDelegate = true">
               添加发言者
             </button>
-            <PopupDelegate
-              v-model="showPopupDelegate"
-              :committee-id="committeeId"
-              @confirm="onDelegateConfirm"
-            />
+            <PopupDelegate v-model="showPopupDelegate" :committee-id="committeeId" @confirm="onDelegateConfirm" />
           </div>
         </div>
 
@@ -933,20 +947,14 @@ onUnmounted(() => {
             <h2 class="card-title text-3xl">会议历程</h2>
           </div>
           <div class="flex-1 min-h-0 overflow-y-auto px-8 py-6 space-y-4">
-            <div
-              v-for="event in historyEvents"
-              :key="event.id ?? event.title"
-              class="rounded-2xl border border-base-300 bg-base-200/40 px-4 py-3 space-y-3"
-            >
+            <div v-for="event in historyEvents" :key="event.id ?? event.title"
+              class="rounded-2xl border border-base-300 bg-base-200/40 px-4 py-3 space-y-3">
               <div>
                 <h3 class="font-semibold text-xl">{{ event.title }}</h3>
-                <p class="text-lg text-base-content/70">{{ event.description }}</p>
+                <p class="text-lg text-base-content/70" style="white-space: pre-line;">{{ event.description }}</p>
               </div>
               <div v-if="event.voteResult" class="flex flex-wrap items-center gap-3 text-base">
-                <span
-                  class="badge badge-lg"
-                  :class="event.voteResult.passed ? 'badge-success' : 'badge-error'"
-                >
+                <span class="badge badge-lg" :class="event.voteResult.passed ? 'badge-success' : 'badge-error'">
                   {{ event.voteResult.passed ? '通过' : '未通过' }}
                 </span>
                 <span class="badge badge-outline badge-lg">赞成 {{ event.voteResult.yes }}</span>
@@ -959,15 +967,59 @@ onUnmounted(() => {
             <button class="btn btn-accent w-full text-1.5xl" @click="showPopupMotion = true">
               发起动议
             </button>
-            <PopupMotion
-              v-model="showPopupMotion"
-              :committee-id="committeeId"
-              @pass="handleMotionPass"
-              @fail="handleMotionFail"
-            />
+            <PopupMotion v-model="showPopupMotion" :committee-id="committeeId" @pass="handleMotionPass"
+              @fail="handleMotionFail" />
           </div>
         </div>
       </div>
     </div>
+
+    <!-- 自由计时器弹窗 -->
+    <dialog v-if="showFreeTimerModal" class="modal" open>
+      <div class="modal-box w-11/12 max-w-3xl space-y-6">
+        <header class="space-y-2">
+          <p class="text-base-content/60">自由磋商/自由辩论计时</p>
+          <h3 class="text-3xl font-bold">自定义计时器</h3>
+        </header>
+
+        <div class="grid gap-4 md:grid-cols-2">
+          <label class="form-control">
+            <span class="label-text">分钟</span>
+            <input v-model.number="freeTimerInputMinutes" type="number" min="0" max="999"
+              class="input input-bordered" />
+          </label>
+          <label class="form-control">
+            <span class="label-text">秒</span>
+            <input v-model.number="freeTimerInputSeconds" type="number" min="0" max="59" class="input input-bordered" />
+          </label>
+        </div>
+
+        <div class="flex justify-end">
+          <button type="button" class="btn btn-outline" @click="applyFreeTimerSettings">设定总时长</button>
+        </div>
+
+        <div class="text-center space-y-2">
+          <div class="text-6xl font-bold">{{ formatTimer(freeTimerRemainingSeconds) }}</div>
+          <p class="text-base-content/70">总时长：{{ formatTimer(freeTimerTotalSeconds) }}</p>
+        </div>
+
+        <div class="flex flex-wrap items-center justify-center gap-3">
+          <button type="button" class="btn btn-primary" :disabled="freeTimerRunning" @click="startFreeTimer">开始</button>
+          <button type="button" class="btn btn-secondary" :disabled="!freeTimerRunning"
+            @click="pauseFreeTimer">暂停</button>
+          <button type="button" class="btn btn-ghost" :disabled="freeTimerRemainingSeconds === freeTimerTotalSeconds"
+            @click="resetFreeTimer">
+            重置
+          </button>
+        </div>
+
+        <div class="modal-action">
+          <button type="button" class="btn btn-success" @click="closeFreeTimerModal">完成</button>
+        </div>
+      </div>
+      <form method="dialog" class="modal-backdrop">
+        <button @click.prevent="closeFreeTimerModal">关闭</button>
+      </form>
+    </dialog>
   </section>
 </template>

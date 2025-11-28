@@ -1,6 +1,6 @@
 <template>
   <dialog v-if="modelValue" class="modal" open>
-    <div class="modal-box max-w-4xl">
+    <div class="modal-box max-w-4xl overflow-y-auto">
       <h3 class="text-2xl font-bold mb-4">{{ dialogTitle }}</h3>
       <div class="max-h-96 overflow-y-auto space-y-2">
         <div

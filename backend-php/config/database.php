@@ -23,7 +23,7 @@ if ($driver === 'sqlite') {
 
 return [
     'driver' => 'mysql',
-    'host' => Env::get('DB_HOST', '106.15.139.140'),
+    'host' => Env::get('DB_HOST', 'localhost'),
     'port' => Env::get('DB_PORT', 3306),
     'database' => Env::get('DB_DATABASE', 'mun'),
     'username' => Env::get('DB_USERNAME', Env::get('MYSQL_USER', 'root')),

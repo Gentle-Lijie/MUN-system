@@ -123,15 +123,18 @@ class DisplayController extends Controller
             $motionTypeCn = $motionTypeNames[$motion->motion_type] ?? $motion->motion_type;
 
             $description = '';
+            if ($motion->description) {
+                $description .= $motion->description . "\n";
+            }
             $proposerInfo = '';
             if ($motion->proposer) {
                 $proposerInfo = $motion->proposer->country ?? 'Unknown';
                 if ($motion->proposer->user) {
                     $proposerInfo .= ' (' . $motion->proposer->user->name . ')';
                 }
-                $description = $proposerInfo . ' 动议了一个' . $motionTypeCn;
+                $description .= $proposerInfo . ' 动议了一个' . $motionTypeCn;
             } else {
-                $description = $motionTypeCn;
+                $description .= $motionTypeCn;
             }
 
             if ($motion->unit_time_seconds) {
@@ -523,74 +526,6 @@ class DisplayController extends Controller
     }
 
     /**
-     * POST /api/display/timer/start
-     * 开始计时
-     */
-    public function startTimer(Request $request): JsonResponse
-    {
-        $data = $this->body($request);
-        $speakerListId = $data['speakerListId'] ?? null;
-
-        if (!$speakerListId) {
-            return $this->json(['error' => 'speakerListId is required'], 400);
-        }
-
-        // 获取当前正在等待的第一个发言者
-        $currentSpeaker = SpeakerListEntry::query()
-            ->where('speaker_list_id', $speakerListId)
-            ->where('status', 'waiting')
-            ->orderBy('position')
-            ->first();
-
-        if (!$currentSpeaker) {
-            return $this->json(['error' => 'No waiting speakers found'], 404);
-        }
-
-        // 更新状态为 speaking
-        $currentSpeaker->status = 'speaking';
-        $currentSpeaker->save();
-
-        return $this->json([
-            'success' => true,
-            'currentSpeaker' => [
-                'id' => $currentSpeaker->id,
-                'position' => $currentSpeaker->position,
-                'status' => $currentSpeaker->status,
-            ],
-        ]);
-    }
-
-    /**
-     * POST /api/display/timer/stop
-     * 停止计时
-     */
-    public function stopTimer(Request $request): JsonResponse
-    {
-        $data = $this->body($request);
-        $speakerListId = $data['speakerListId'] ?? null;
-
-        if (!$speakerListId) {
-            return $this->json(['error' => 'speakerListId is required'], 400);
-        }
-
-        // 获取当前正在发言的人
-        $currentSpeaker = SpeakerListEntry::query()
-            ->where('speaker_list_id', $speakerListId)
-            ->where('status', 'speaking')
-            ->first();
-
-        if ($currentSpeaker) {
-            // 恢复为 waiting 状态
-            $currentSpeaker->status = 'waiting';
-            $currentSpeaker->save();
-        }
-
-        return $this->json([
-            'success' => true,
-        ]);
-    }
-
-    /**
      * POST /api/display/speaker/next
      * 下一个发言者 - 删除当前发言者并调整后续position
      */
@@ -663,7 +598,43 @@ class DisplayController extends Controller
             ]);
         } catch (\Exception $e) {
             DB::rollBack();
-            return $this->json(['error' => 'Failed to move to next speaker: ' . $e->getMessage()], 500);
+            return $this->json(['error' => 'Failed to move to next speaker'], 500);
         }
+    }
+
+    /**
+     * POST /api/display/set-status
+     * 设置委员会状态
+     */
+    public function setStatus(Request $request): JsonResponse
+    {
+        // 显示大屏操作不需要认证
+        $data = $this->body($request);
+        $committeeId = $data['committeeId'] ?? null;
+        $status = $data['status'] ?? null;
+
+        if (!$committeeId) {
+            return $this->json(['error' => 'committeeId is required'], 400);
+        }
+
+        $validStatuses = ['preparation', 'in_session', 'paused', 'completed'];
+        if (!in_array($status, $validStatuses, true)) {
+            return $this->json(['error' => 'Invalid status'], 400);
+        }
+
+        $committee = Committee::query()->find($committeeId);
+        if (!$committee) {
+            return $this->json(['error' => 'Committee not found'], 404);
+        }
+
+        $committee->status = $status;
+        $committee->save();
+
+        return $this->json([
+            'committee' => [
+                'id' => $committee->id,
+                'status' => $committee->status,
+            ],
+        ]);
     }
 }

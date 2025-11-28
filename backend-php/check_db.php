@@ -3,7 +3,7 @@
  * 简单的数据库检查脚本
  */
 
-$host = '106.15.139.140';
+$host = 'localhost';
 $port = 3306;
 $database = 'mun';
 $username = 'root';
