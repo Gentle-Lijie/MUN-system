@@ -1,5 +1,9 @@
+
 <script setup lang="ts">
 // Welcome page component
+function onDisplayClick() {
+  window.alert('请主席团从后台打开大屏')
+}
 </script>
 
 <template>
@@ -12,7 +16,7 @@
         </p>
         <div class="flex gap-4 justify-center">
           <router-link to="/backend" class="btn btn-primary">进入后台</router-link>
-          <router-link to="/display/1" class="btn btn-outline">显示大屏</router-link>
+          <button class="btn btn-outline" @click="onDisplayClick">显示大屏</button>
         </div>
       </div>
     </div>

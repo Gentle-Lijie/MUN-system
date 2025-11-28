@@ -16,16 +16,18 @@ class AuthController extends Controller
     public function login(Request $request): JsonResponse
     {
         $payload = $this->body($request);
-        $email = strtolower(trim((string) ($payload['email'] ?? '')));
+
+        $email = trim((string) ($payload['email'] ?? ''));
         $password = (string) ($payload['password'] ?? '');
 
         if ($email === '' || $password === '') {
-            throw new HttpException('Email and password are required', 400);
+            throw new HttpException('用户名和密码不能为空', 400);
         }
 
-        $user = User::query()->whereRaw('LOWER(email) = ?', [$email])->first();
+        // 关闭邮箱格式校验，直接用 email 字段做用户名
+        $user = User::query()->where('email', $email)->first();
         if (!$user || !$user->checkPassword($password)) {
-            throw new HttpException('邮箱或密码不正确', 401);
+            throw new HttpException('用户名或密码不正确', 401);
         }
 
         $token = $user->issueSessionToken();

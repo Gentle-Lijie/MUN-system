@@ -22,6 +22,7 @@ class Motion extends Model
         'veto_applicable',
         'state',
         'vote_result',
+        'description',
     ];
 
     protected $attributes = [
@@ -71,6 +72,7 @@ class Motion extends Model
             'vetoApplicable' => (bool) $this->veto_applicable,
             'state' => $this->state,
             'voteResult' => $this->vote_result,
+            'description' => $this->description,
             'createdAt' => $formatDate($this->created_at),
             'updatedAt' => $formatDate($this->updated_at),
         ];

@@ -106,7 +106,7 @@ const fetchUserProfile = async () => {
 
 const handleLogin = async () => {
   if (!loginForm.email || !loginForm.password) {
-    loginError.value = '请输入邮箱和密码'
+    loginError.value = '请输入用户名和密码'
     return
   }
   loginSubmitting.value = true
@@ -126,7 +126,7 @@ const handleLogin = async () => {
 
     if (!response.ok) {
       const errData = await response.json().catch(() => ({}))
-      throw new Error(errData?.message || '登录失败，请检查邮箱或密码')
+      throw new Error(errData?.message || '登录失败，请检查用户名或密码')
     }
     const data = await response.json()
     user.value = {
@@ -336,9 +336,9 @@ watch(needsLogin, (newVal) => {
       <form class="space-y-4" @submit.prevent="handleLogin">
         <div class="space-y-4">
           <FormField
-            legend="登录邮箱"
-            label="邮箱"
-            description="请输入会议后台发放的邮箱和密码"
+            legend="登录账号"
+            label="用户名"
+            description="请输入会议后台发放的用户名和密码"
             fieldset-class="border border-base-300 rounded-box p-4"
           >
             <div class="input input-bordered flex items-center gap-2">
@@ -358,7 +358,7 @@ watch(needsLogin, (newVal) => {
               </svg>
               <input
                 v-model="loginForm.email"
-                type="email"
+                type="text"
                 class="grow bg-transparent focus:outline-none"
                 required
               />
