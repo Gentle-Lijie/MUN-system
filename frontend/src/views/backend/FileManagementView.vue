@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { onMounted, reactive, ref } from 'vue'
 import FormField from '@/components/common/FormField.vue'
-import { api, type FileSubmission, type Venue, type FileReference, API_BASE } from '@/services/api'
+import { api, type FileSubmission, type Venue, type FileReference, buildFileUrl } from '@/services/api'
 import PopupFileSelect from '@/components/PopupFileSelect.vue'
 
 const publishedFiles = ref<FileSubmission[]>([])
@@ -174,11 +174,7 @@ onMounted(() => {
       <div class="space-y-4">
         <div class="flex gap-4 mb-4 flex-wrap">
           <FormField legend="委员会筛选" label="选择委员会" fieldsetClass="min-w-[12rem]">
-            <select
-              v-model="committeeFilter"
-              class="select select-bordered"
-              @change="fetchPublishedFiles"
-            >
+            <select v-model="committeeFilter" class="select select-bordered" @change="fetchPublishedFiles">
               <option value="">所有委员会</option>
               <option v-for="venue in venues" :key="venue.id" :value="venue.id.toString()">
                 {{ venue.name }} ({{ venue.code }})
@@ -186,13 +182,8 @@ onMounted(() => {
             </select>
           </FormField>
           <FormField legend="搜索" label="按标题或描述" fieldsetClass="flex-1">
-            <input
-              v-model="searchQuery"
-              type="text"
-              placeholder="搜索文件标题或描述"
-              class="input input-bordered w-full"
-              @input="fetchPublishedFiles"
-            />
+            <input v-model="searchQuery" type="text" placeholder="搜索文件标题或描述" class="input input-bordered w-full"
+              @input="fetchPublishedFiles" />
           </FormField>
         </div>
 
@@ -205,20 +196,16 @@ onMounted(() => {
         </div>
 
         <div v-else class="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-          <div
-            v-for="file in publishedFiles"
-            :key="file.id"
+          <div v-for="file in publishedFiles" :key="file.id"
             class="card bg-base-100 border border-base-200 cursor-pointer transition-all hover:shadow-md"
-            :class="{ 'ring-2 ring-primary': selectedFile?.id === file.id }"
-            @click="selectFile(file)"
-          >
+            :class="{ 'ring-2 ring-primary': selectedFile?.id === file.id }" @click="selectFile(file)">
             <div class="card-body p-4">
               <h3 class="card-title text-sm font-medium line-clamp-2">{{ file.title }}</h3>
               <div class="flex items-center gap-2 mt-2">
                 <span class="badge badge-primary badge-xs">{{ file.type }}</span>
                 <span class="badge badge-outline badge-xs">{{
                   statusOptions.find((opt) => opt.value === file.status)?.label || file.status
-                }}</span>
+                  }}</span>
               </div>
               <div class="text-xs text-base-content/60 mt-2">
                 {{ file.submitted_by.name }}
@@ -233,10 +220,7 @@ onMounted(() => {
 
       <!-- 右侧：配置面板 -->
       <div class="space-y-4">
-        <div
-          v-if="!selectedFile"
-          class="border border-base-200 rounded-2xl p-8 text-center text-base-content/60"
-        >
+        <div v-if="!selectedFile" class="border border-base-200 rounded-2xl p-8 text-center text-base-content/60">
           选择左侧的文件进行配置
         </div>
 
@@ -260,8 +244,8 @@ onMounted(() => {
               <label class="label-text font-medium">分类</label>
               <p class="text-sm text-base-content/70 mt-1">
                 {{
-                  typeOptions.find((opt) => opt.value === selectedFile!.type)?.label ||
-                  selectedFile!.type
+                typeOptions.find((opt) => opt.value === selectedFile!.type)?.label ||
+                selectedFile!.type
                 }}
               </p>
             </div>
@@ -270,8 +254,8 @@ onMounted(() => {
               <label class="label-text font-medium">状态</label>
               <p class="text-sm text-base-content/70 mt-1">
                 {{
-                  statusOptions.find((opt) => opt.value === selectedFile!.status)?.label ||
-                  selectedFile!.status
+                statusOptions.find((opt) => opt.value === selectedFile!.status)?.label ||
+                selectedFile!.status
                 }}
               </p>
             </div>
@@ -280,8 +264,8 @@ onMounted(() => {
               <label class="label-text font-medium">可见性</label>
               <p class="text-sm text-base-content/70 mt-1">
                 {{
-                  visibilityOptions.find((opt) => opt.value === selectedFile!.visibility)?.label ||
-                  selectedFile!.visibility
+                visibilityOptions.find((opt) => opt.value === selectedFile!.visibility)?.label ||
+                selectedFile!.visibility
                 }}
               </p>
             </div>
@@ -290,9 +274,9 @@ onMounted(() => {
               <label class="label-text font-medium">委员会</label>
               <p class="text-sm text-base-content/70 mt-1">
                 {{
-                  selectedFile.committee
-                    ? `${selectedFile.committee.name} (${selectedFile.committee.code})`
-                    : '无'
+                selectedFile.committee
+                ? `${selectedFile.committee.name} (${selectedFile.committee.code})`
+                : '无'
                 }}
               </p>
             </div>
@@ -301,7 +285,7 @@ onMounted(() => {
               <label class="label-text font-medium">更新时间</label>
               <p class="text-sm text-base-content/70 mt-1">
                 {{
-                  selectedFile.updated_at ? new Date(selectedFile.updated_at).toLocaleString() : ''
+                selectedFile.updated_at ? new Date(selectedFile.updated_at).toLocaleString() : ''
                 }}
               </p>
             </div>
@@ -327,27 +311,15 @@ onMounted(() => {
           <!-- 编辑模式 -->
           <form v-else class="space-y-3" @submit.prevent="updateConfig">
             <FormField legend="文件标题" label="输入标题">
-              <input
-                v-model="editForm.title"
-                type="text"
-                class="input input-bordered input-sm w-full"
-                required
-              />
+              <input v-model="editForm.title" type="text" class="input input-bordered input-sm w-full" required />
             </FormField>
             <FormField legend="描述" label="可填写背景">
-              <textarea
-                v-model="editForm.description"
-                class="textarea textarea-bordered textarea-sm w-full"
-                rows="3"
-              ></textarea>
+              <textarea v-model="editForm.description" class="textarea textarea-bordered textarea-sm w-full"
+                rows="3"></textarea>
             </FormField>
             <FormField legend="主席意见" label="Dias Feedback">
-              <textarea
-                v-model="editForm.dias_fb"
-                class="textarea textarea-bordered textarea-sm w-full"
-                rows="3"
-                placeholder="主席团反馈（可选）"
-              ></textarea>
+              <textarea v-model="editForm.dias_fb" class="textarea textarea-bordered textarea-sm w-full" rows="3"
+                placeholder="主席团反馈（可选）"></textarea>
             </FormField>
 
             <!-- 2x2 网格布局：分类、状态、可见性、委员会 -->
@@ -369,16 +341,8 @@ onMounted(() => {
               </FormField>
 
               <FormField legend="可见性">
-                <select
-                  v-model="configForm.visibility"
-                  class="select select-bordered w-full"
-                  required
-                >
-                  <option
-                    v-for="option in visibilityOptions"
-                    :key="option.value"
-                    :value="option.value"
-                  >
+                <select v-model="configForm.visibility" class="select select-bordered w-full" required>
+                  <option v-for="option in visibilityOptions" :key="option.value" :value="option.value">
                     {{ option.label }}
                   </option>
                 </select>
@@ -400,12 +364,7 @@ onMounted(() => {
           <div class="divider"></div>
 
           <div class="flex gap-2">
-            <a
-              :href="`${API_BASE}${selectedFile.content_path}`"
-              target="_blank"
-              class="btn btn-primary flex-1"
-              >查看文件</a
-            >
+            <a :href="buildFileUrl(selectedFile.content_path)" target="_blank" class="btn btn-primary flex-1">查看文件</a>
             <button class="btn btn-outline" @click="startEdit(selectedFile)">编辑</button>
             <button class="btn btn-error" @click="deleteFile(selectedFile)">删除</button>
           </div>

@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { onMounted, ref } from 'vue'
 import FormField from '@/components/common/FormField.vue'
-import { api, type FileSubmission, API_BASE } from '@/services/api'
+import { api, type FileSubmission, buildFileUrl } from '@/services/api'
 
 const submissions = ref<FileSubmission[]>([])
 const loading = ref(false)
@@ -58,24 +58,16 @@ onMounted(fetchSubmissions)
       <div class="space-y-4">
         <div class="flex gap-4 mb-4">
           <FormField legend="搜索" label="按标题或描述" fieldsetClass="w-full">
-            <input
-              v-model="searchQuery"
-              type="text"
-              placeholder="搜索文件标题或描述"
-              class="input input-bordered w-full"
-              @input="fetchSubmissions"
-            />
+            <input v-model="searchQuery" type="text" placeholder="搜索文件标题或描述" class="input input-bordered w-full"
+              @input="fetchSubmissions" />
           </FormField>
         </div>
         <div v-if="loading" class="flex justify-center">
           <span class="loading loading-spinner loading-lg"></span>
         </div>
-        <article
-          v-for="file in submissions"
-          :key="file.id"
+        <article v-for="file in submissions" :key="file.id"
           class="border border-base-200 rounded-2xl p-4 bg-base-100 space-y-3 cursor-pointer hover:bg-base-200/50"
-          @click="selectFile(file)"
-        >
+          @click="selectFile(file)">
           <div class="flex justify-between items-start">
             <div>
               <p class="text-xs text-base-content/60">{{ file.id }}</p>
@@ -87,19 +79,14 @@ onMounted(fetchSubmissions)
               </p>
             </div>
             <div class="flex gap-2">
-              <a
-                :href="`${API_BASE}${file.content_path}`"
-                target="_blank"
-                class="btn btn-xs btn-outline"
-                >查看文件</a
-              >
+              <a :href="buildFileUrl(file.content_path)" target="_blank" class="btn btn-xs btn-outline">查看文件</a>
               <span class="badge badge-warning">待审批</span>
             </div>
           </div>
           <p class="text-sm">{{ file.description }}</p>
           <p class="text-xs text-base-content/50">
             提交时间：{{
-              file.submitted_at ? new Date(file.submitted_at).toLocaleString() : '未知'
+            file.submitted_at ? new Date(file.submitted_at).toLocaleString() : '未知'
             }}
           </p>
         </article>
@@ -123,12 +110,8 @@ onMounted(fetchSubmissions)
               </select>
             </FormField>
             <FormField legend="反馈意见" label="可选备注">
-              <textarea
-                v-model="decisionForm.dias_fb"
-                class="textarea textarea-bordered"
-                rows="3"
-                placeholder="可选的反馈意见"
-              ></textarea>
+              <textarea v-model="decisionForm.dias_fb" class="textarea textarea-bordered" rows="3"
+                placeholder="可选的反馈意见"></textarea>
             </FormField>
             <button class="btn btn-primary w-full" @click="submitDecision">提交审批</button>
           </div>

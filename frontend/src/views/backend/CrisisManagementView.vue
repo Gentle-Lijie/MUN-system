@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, onMounted, reactive, ref } from 'vue'
 import FormField from '@/components/common/FormField.vue'
-import { api, API_BASE, type Crisis, type CrisisStatus, type Venue } from '@/services/api'
+import { api, buildFileUrl, type Crisis, type CrisisStatus, type Venue } from '@/services/api'
 
 const crises = ref<Crisis[]>([])
 const loading = ref(false)
@@ -176,32 +176,25 @@ onMounted(() => {
           暂无危机记录
         </p>
 
-        <article
-          v-for="crisis in filteredCrises"
-          :key="crisis.id"
-          class="border border-base-200 rounded-2xl p-4 space-y-3"
-        >
+        <article v-for="crisis in filteredCrises" :key="crisis.id"
+          class="border border-base-200 rounded-2xl p-4 space-y-3">
           <div class="flex items-start justify-between gap-4">
             <div class="space-y-1">
               <div class="flex items-center gap-2">
                 <h3 class="text-lg font-semibold">{{ crisis.title }}</h3>
                 <span class="badge" :class="statusClass[crisis.status]">{{
                   statusLabels[crisis.status]
-                }}</span>
+                  }}</span>
               </div>
               <p class="text-sm text-base-content/70">
                 发布于：{{
-                  crisis.publishedAt ? new Date(crisis.publishedAt).toLocaleString() : '—'
+                crisis.publishedAt ? new Date(crisis.publishedAt).toLocaleString() : '—'
                 }}
                 <span v-if="crisis.publishedBy"> · {{ crisis.publishedBy.name }}</span>
               </p>
               <div class="flex flex-wrap gap-2 text-xs text-base-content/70">
-                <span
-                  v-for="(label, idx) in targetLabel(crisis.targetCommittees)"
-                  :key="`${crisis.id}-${idx}`"
-                  class="badge badge-outline"
-                  >{{ label }}</span
-                >
+                <span v-for="(label, idx) in targetLabel(crisis.targetCommittees)" :key="`${crisis.id}-${idx}`"
+                  class="badge badge-outline">{{ label }}</span>
               </div>
             </div>
             <div class="flex flex-col gap-2">
@@ -210,14 +203,8 @@ onMounted(() => {
           </div>
           <p class="text-sm leading-relaxed whitespace-pre-line">{{ crisis.content }}</p>
           <div class="flex flex-wrap gap-3 items-center text-sm">
-            <a
-              v-if="crisis.filePath"
-              class="link link-primary"
-              :href="`${API_BASE}${crisis.filePath}`"
-              target="_blank"
-              rel="noopener"
-              >查看附件</a
-            >
+            <a v-if="crisis.filePath" class="link link-primary" :href="buildFileUrl(crisis.filePath)" target="_blank"
+              rel="noopener">查看附件</a>
           </div>
         </article>
       </div>
@@ -230,33 +217,14 @@ onMounted(() => {
           </button>
         </div>
         <FormField legend="危机标题" fieldsetClass="">
-          <input
-            v-model="form.title"
-            type="text"
-            class="input input-bordered w-full"
-            placeholder="危机标题"
-            required
-          />
+          <input v-model="form.title" type="text" class="input input-bordered w-full" placeholder="危机标题" required />
         </FormField>
         <FormField legend="危机详情" fieldsetClass="w-full">
-          <textarea
-            v-model="form.content"
-            class="textarea textarea-bordered w-full"
-            rows="5"
-            placeholder="描述背景、任务目标、时间线"
-            required
-          ></textarea>
+          <textarea v-model="form.content" class="textarea textarea-bordered w-full" rows="5"
+            placeholder="描述背景、任务目标、时间线" required></textarea>
         </FormField>
-        <FormField
-          legend="面向委员会"
-          fieldsetClass="w-full"
-          description="支持多选，不选择则默认推送至全部委员会"
-        >
-          <select
-            v-model="form.targetCommittees"
-            class="select select-bordered h-32 w-full"
-            multiple
-          >
+        <FormField legend="面向委员会" fieldsetClass="w-full" description="支持多选，不选择则默认推送至全部委员会">
+          <select v-model="form.targetCommittees" class="select select-bordered h-32 w-full" multiple>
             <option v-for="venue in venues" :key="venue.id" :value="venue.id">
               {{ venue.name }} ({{ venue.code }})
             </option>
@@ -271,16 +239,10 @@ onMounted(() => {
           </select>
         </FormField> -->
         <FormField legend="附件（可选）" fieldsetClass="w-full">
-          <input
-            type="file"
-            class="file-input file-input-primary w-full"
-            @change="handleFileChange"
-          />
+          <input type="file" class="file-input file-input-primary w-full" @change="handleFileChange" />
         </FormField>
         <div v-if="form.filePath" class="flex items-center gap-3 text-sm px-4">
-          <a :href="`${API_BASE}${form.filePath}`" class="link" target="_blank" rel="noopener"
-            >当前附件</a
-          >
+          <a :href="buildFileUrl(form.filePath)" class="link" target="_blank" rel="noopener">当前附件</a>
           <button class="btn btn-xs btn-ghost" type="button" @click="removeAttachment">移除</button>
         </div>
         <button type="submit" class="btn btn-primary w-full" :disabled="saving">

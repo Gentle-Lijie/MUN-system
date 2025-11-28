@@ -1,9 +1,32 @@
 const envApiBase = import.meta.env?.VITE_API_BASE_URL
+const envFileBase = import.meta.env?.VITE_FILE_BASE_URL
 const browserOrigin = typeof window !== 'undefined' ? window.location.origin : ''
-const normalizedBase = (
-  envApiBase && envApiBase.trim().length > 0 ? envApiBase : browserOrigin
-).replace(/\/$/, '')
+
+const normalizeBase = (value: string | undefined | null, fallback: string): string => {
+  const trimmed = value?.trim()
+  const base = trimmed && trimmed.length > 0 ? trimmed : fallback
+  return base.replace(/\/$/, '')
+}
+
+const normalizedBase = normalizeBase(envApiBase, browserOrigin || 'http://localhost:8000')
 export const API_BASE = import.meta.env.DEV ? '' : normalizedBase
+
+const resolvedFileBase = normalizeBase(
+  envFileBase,
+  envApiBase && envApiBase.trim().length > 0
+    ? envApiBase
+    : import.meta.env.DEV
+      ? 'http://localhost:8000'
+      : browserOrigin || 'http://localhost:8000'
+)
+
+export const FILE_BASE = resolvedFileBase
+const ABSOLUTE_URL_PATTERN = /^https?:\/\//i
+export const buildFileUrl = (path?: string | null): string => {
+  if (!path) return ''
+  if (ABSOLUTE_URL_PATTERN.test(path)) return path
+  return `${FILE_BASE}${path.startsWith('/') ? '' : '/'}${path}`
+}
 
 export interface ApiResponse<T> {
   data?: T
@@ -32,6 +55,8 @@ export interface FileSubmission {
   dias_fb?: string
   created_at: string
   updated_at: string
+  is_owner?: boolean
+  can_edit?: boolean
 }
 
 export interface FileReference {
@@ -229,6 +254,16 @@ class ApiService {
     if (params?.search) query.set('search', params.search)
 
     return this.request(`/api/files/submissions?${query}`)
+  }
+
+  async getMyDocuments(params?: { search?: string; committeeId?: string | number }): Promise<{ items: FileSubmission[]; total: number }> {
+    const query = new URLSearchParams()
+    if (params?.search) query.set('search', params.search)
+    if (params?.committeeId !== undefined && params?.committeeId !== null) {
+      query.set('committeeId', String(params.committeeId))
+    }
+    const suffix = query.toString() ? `?${query}` : ''
+    return this.request(`/api/files/my-documents${suffix}`)
   }
 
   async submitFile(data: {

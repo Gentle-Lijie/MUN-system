@@ -53,6 +53,7 @@ return static function (Router $router): void {
     $router->post('/api/motions', [MotionController::class, 'create']);
     $router->post('/api/motions/{motionId:\d+}/{listId:\d+}', [MotionController::class, 'updateSpeakerList']);
 
+    $router->get('/api/files/my-documents', [FilesController::class, 'getMyDocuments']);
     $router->get('/api/files/submissions', [FilesController::class, 'getSubmissions']);
     $router->post('/api/files/submissions', [FilesController::class, 'submitFile']);
     $router->patch('/api/files/submissions/{submissionId:\d+}', [FilesController::class, 'updateSubmission']);

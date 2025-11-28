@@ -52,6 +52,63 @@ class FilesController extends Controller
         ]);
     }
 
+    public function getMyDocuments(Request $request): JsonResponse
+    {
+        $user = AuthSupport::user($this->app, $request, true);
+
+        $committeeIds = $user->delegates()->pluck('committee_id')->filter()->map(fn ($id) => (int) $id)->all();
+        $committeeFilter = $request->query->get('committeeId');
+        if ($committeeFilter !== null && $committeeFilter !== '') {
+            $committeeId = (int) $committeeFilter;
+            if ($committeeId > 0 && !in_array($committeeId, $committeeIds, true)) {
+                $committeeIds[] = $committeeId;
+            }
+        }
+
+        $search = trim((string) $request->query->get('search', ''));
+
+        $query = Files::with(['submitter', 'committee'])
+            ->where(function (Builder $builder) use ($user, $committeeIds): void {
+                $builder->where('submitted_by', $user->id);
+
+                if (!empty($committeeIds)) {
+                    $builder->orWhere(function (Builder $sub) use ($committeeIds, $user): void {
+                        $sub->where('status', 'published')
+                            ->whereIn('committee_id', $committeeIds)
+                            ->where(function (Builder $visibility) use ($user): void {
+                                $visibility->whereIn('visibility', ['public', 'all_committees']);
+                                if (in_array($user->role, ['dais', 'admin'], true)) {
+                                    $visibility->orWhere('visibility', 'committee_only');
+                                }
+                            });
+                    });
+                }
+            });
+
+        if ($search !== '') {
+            $needle = '%' . strtolower($search) . '%';
+            $query->where(static function (Builder $builder) use ($needle): void {
+                $builder
+                    ->whereRaw('LOWER(title) LIKE ?', [$needle])
+                    ->orWhereRaw('LOWER(description) LIKE ?', [$needle]);
+            });
+        }
+
+        $files = $query->orderByDesc('updated_at')->get();
+        $finalized = ['approved', 'published', 'rejected'];
+
+        return $this->json([
+            'items' => $files->map(function (Files $file) use ($user, $finalized) {
+                $payload = $this->fileToApiResponse($file);
+                $isOwner = $file->submitted_by === $user->id;
+                $payload['is_owner'] = $isOwner;
+                $payload['can_edit'] = $isOwner && !in_array($file->status, $finalized, true);
+                return $payload;
+            })->all(),
+            'total' => $files->count(),
+        ]);
+    }
+
     public function submitFile(Request $request): JsonResponse
     {
         $user = \App\Support\Auth::user($this->app, $request, true);

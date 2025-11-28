@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { onMounted, reactive, ref } from 'vue'
 import FormField from '@/components/common/FormField.vue'
-import { api, type FileSubmission, API_BASE, type Crisis } from '@/services/api'
+import { api, type FileSubmission, type Crisis, buildFileUrl } from '@/services/api'
 
 const documents = ref<FileSubmission[]>([])
 const loading = ref(false)
@@ -37,12 +37,19 @@ const typeLabels: Record<string, string> = {
   other: '其他',
 }
 
+const FINALIZED_STATUSES = ['approved', 'published', 'rejected'] as const
+
+const canEditDocument = (doc: FileSubmission): boolean => {
+  if (typeof doc.can_edit === 'boolean') return doc.can_edit
+  const isOwner = doc.is_owner ?? false
+  if (!isOwner) return false
+  return !FINALIZED_STATUSES.includes(doc.status as (typeof FINALIZED_STATUSES)[number])
+}
+
 const fetchDocuments = async () => {
   loading.value = true
   try {
-    // For delegate view, we might need to filter by current user
-    // Assuming the API returns only user's submissions when called by delegate
-    const response = await api.getFileSubmissions()
+    const response = await api.getMyDocuments()
     documents.value = response.items
   } catch (error) {
     console.error('Failed to fetch documents:', error)
@@ -131,9 +138,8 @@ const saveModal = async () => {
 }
 
 const onEditClick = (doc: FileSubmission) => {
-  const finalized = ['approved', 'published', 'rejected'].includes(doc.status)
-  if (finalized) {
-    window.alert('已定稿，无法编辑')
+  if (!canEditDocument(doc)) {
+    window.alert('只能编辑自己且未定稿的文件')
     return
   }
   openEditModal(doc)
@@ -222,48 +228,33 @@ onMounted(() => {
           <p v-else-if="crises.length === 0" class="text-center text-base-content/60 py-6">
             暂无危机信息
           </p>
-          <article
-            v-for="crisis in crises"
-            :key="crisis.id"
-            class="rounded-xl border border-base-200 p-4 space-y-2"
-          >
+          <article v-for="crisis in crises" :key="crisis.id" class="rounded-xl border border-base-200 p-4 space-y-2">
             <div class="flex items-center gap-2 flex-wrap">
               <h4 class="text-lg font-semibold">{{ crisis.title }}</h4>
-              <span
-                class="badge"
-                :class="
+              <span class="badge" :class="
                   crisis.status === 'active'
                     ? 'badge-info'
                     : crisis.status === 'resolved'
                       ? 'badge-success'
                       : 'badge-outline'
-                "
-              >
+                ">
                 {{
-                  crisis.status === 'active'
-                    ? '进行中'
-                    : crisis.status === 'resolved'
-                      ? '已结案'
-                      : '草稿'
+                crisis.status === 'active'
+                ? '进行中'
+                : crisis.status === 'resolved'
+                ? '已结案'
+                : '草稿'
                 }}
               </span>
               <span class="badge badge-ghost">{{ targetSummary(crisis) }}</span>
             </div>
             <p class="text-sm text-base-content/70 whitespace-pre-line">{{ crisis.content }}</p>
             <div class="flex items-center gap-3 text-sm">
-              <a
-                v-if="crisis.filePath"
-                :href="`${API_BASE}${crisis.filePath}`"
-                class="link"
-                target="_blank"
-                rel="noopener"
-                >查看附件</a
-              >
-              <span class="text-base-content/60"
-                >更新：{{
-                  crisis.publishedAt ? new Date(crisis.publishedAt).toLocaleString() : '—'
-                }}</span
-              >
+              <a v-if="crisis.filePath" :href="buildFileUrl(crisis.filePath)" class="link" target="_blank"
+                rel="noopener">查看附件</a>
+              <span class="text-base-content/60">更新：{{
+                crisis.publishedAt ? new Date(crisis.publishedAt).toLocaleString() : '—'
+              }}</span>
             </div>
           </article>
         </div>
@@ -294,16 +285,13 @@ onMounted(() => {
                   <div class="flex flex-col">
                     <span class="font-medium">{{ doc.title }}</span>
                     <div class="text-xs text-base-content/60 flex flex-wrap gap-2">
-                      <span
-                        >更新：{{
-                          doc.updated_at ? new Date(doc.updated_at).toLocaleString() : '—'
-                        }}</span
-                      >
-                      <button
-                        v-if="doc.dias_fb"
-                        class="btn btn-ghost btn-xs"
-                        @click.prevent="showDiasFeedback(doc)"
-                      >
+                      <span>更新：{{
+                        doc.updated_at ? new Date(doc.updated_at).toLocaleString() : '—'
+                      }}</span>
+                      <span v-if="!doc.is_owner && doc.submitted_by?.name" class="badge badge-ghost">
+                        来自：{{ doc.submitted_by?.name }}
+                      </span>
+                      <button v-if="doc.dias_fb" class="btn btn-ghost btn-xs" @click.prevent="showDiasFeedback(doc)">
                         审批意见
                       </button>
                     </div>
@@ -313,16 +301,13 @@ onMounted(() => {
                   <span class="badge badge-outline">{{ typeLabels[doc.type] || doc.type }}</span>
                 </td>
                 <td>
-                  <span
-                    class="badge"
-                    :class="{
-                      'badge-success': doc.status === 'approved',
-                      'badge-primary': doc.status === 'published',
-                      'badge-info': doc.status === 'submitted',
-                      'badge-warning': doc.status === 'draft' || !doc.status,
-                      'badge-error': doc.status === 'rejected',
-                    }"
-                  >
+                  <span class="badge" :class="{
+                    'badge-success': doc.status === 'approved',
+                    'badge-primary': doc.status === 'published',
+                    'badge-info': doc.status === 'submitted',
+                    'badge-warning': doc.status === 'draft' || !doc.status,
+                    'badge-error': doc.status === 'rejected',
+                  }">
                     {{
                       doc.status === 'approved'
                         ? '已通过'
@@ -337,29 +322,10 @@ onMounted(() => {
                   </span>
                 </td>
                 <td class="space-x-1 whitespace-nowrap">
-                  <a
-                    :href="`${API_BASE}${doc.content_path}`"
-                    target="_blank"
-                    class="btn btn-xs btn-outline"
-                    >查看</a
-                  >
-                  <button
-                    class="btn btn-xs btn-secondary"
-                    :class="{
-                      'opacity-60':
-                        doc.status === 'approved' ||
-                        doc.status === 'published' ||
-                        doc.status === 'rejected',
-                    }"
-                    :title="
-                      doc.status === 'approved' ||
-                      doc.status === 'published' ||
-                      doc.status === 'rejected'
-                        ? '已定稿，不可编辑'
-                        : '编辑'
-                    "
-                    @click.prevent="onEditClick(doc)"
-                  >
+                  <a :href="buildFileUrl(doc.content_path)" target="_blank" class="btn btn-xs btn-outline">查看</a>
+                  <button class="btn btn-xs btn-secondary" :disabled="!canEditDocument(doc)"
+                    :class="{ 'opacity-60 cursor-not-allowed': !canEditDocument(doc) }"
+                    :title="!canEditDocument(doc) ? '只能编辑自己且未定稿的文件' : '编辑'" @click.prevent="onEditClick(doc)">
                     编辑
                   </button>
                 </td>
@@ -395,18 +361,10 @@ onMounted(() => {
             </select>
           </FormField>
           <FormField legend="更新附件" label="可选上传新附件">
-            <input
-              type="file"
-              class="file-input file-input-bordered w-full"
-              @change="onEditFileChange"
-            />
+            <input type="file" class="file-input file-input-bordered w-full" @change="onEditFileChange" />
           </FormField>
           <FormField legend="描述" label="补充说明">
-            <textarea
-              v-model="editForm.description"
-              class="textarea textarea-bordered"
-              rows="3"
-            ></textarea>
+            <textarea v-model="editForm.description" class="textarea textarea-bordered" rows="3"></textarea>
           </FormField>
           <FormField legend="提交状态" label="草稿或提交">
             <select v-model="editForm.status" class="select select-bordered">
@@ -430,13 +388,7 @@ onMounted(() => {
         </p>
         <div class="space-y-3">
           <FormField legend="文件标题" label="请输入标题">
-            <input
-              v-model="uploadForm.title"
-              type="text"
-              class="input input-bordered"
-              placeholder="文件标题"
-              required
-            />
+            <input v-model="uploadForm.title" type="text" class="input input-bordered" placeholder="文件标题" required />
           </FormField>
           <FormField legend="文件类型" label="选择类别">
             <select v-model="uploadForm.type" class="select select-bordered">
@@ -448,19 +400,10 @@ onMounted(() => {
             </select>
           </FormField>
           <FormField legend="上传附件" label="请选择文件">
-            <input
-              type="file"
-              class="file-input file-input-bordered w-full"
-              required
-              @change="handleFileChange"
-            />
+            <input type="file" class="file-input file-input-bordered w-full" required @change="handleFileChange" />
           </FormField>
           <FormField legend="描述" label="可选补充说明">
-            <textarea
-              v-model="uploadForm.description"
-              class="textarea textarea-bordered"
-              rows="3"
-            ></textarea>
+            <textarea v-model="uploadForm.description" class="textarea textarea-bordered" rows="3"></textarea>
           </FormField>
         </div>
         <div class="modal-action">
