@@ -62,15 +62,14 @@ const caucusRemainingState = ref<Record<string, number>>({})
 let timerInterval: number | null = null
 // 响铃音频资源
 const bellAudio = new Audio('/bell.mp3')
+const bellAudio2 = new Audio('/bell2.mp3')
 const playBell = (count = 1) => {
   if (count === 1) {
     bellAudio.currentTime = 0
     bellAudio.play()
   } else if (count === 2) {
-    bellAudio.currentTime = 0
-    bellAudio.play()
-    bellAudio.currentTime = 0
-    bellAudio.play()
+    bellAudio2.currentTime = 0
+    bellAudio2.play()
   }
 }
 
