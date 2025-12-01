@@ -1,4 +1,3 @@
-
 <script setup lang="ts">
 import { onBeforeUnmount, onMounted, ref } from 'vue'
 
@@ -318,11 +317,7 @@ onBeforeUnmount(() => {
               class="card border border-dashed border-primary/40 bg-base-100/90">
               <div class="card-body space-y-3">
                 <div class="flex items-center gap-2">
-                  <span class="inline-flex items-center justify-center w-6 h-6 rounded-md bg-primary/10 text-primary">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 5v14l7-5 7 5V5a2 2 0 00-2-2H7a2 2 0 00-2 2z" />
-                    </svg>
-                  </span>
+                  <span class="badge badge-primary badge-outline">Reserve</span>
                   <h3 class="font-semibold">{{ block.title }}</h3>
                 </div>
                 <p class="text-sm opacity-70">{{ block.hint }}</p>
